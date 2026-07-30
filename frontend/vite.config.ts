@@ -3,8 +3,10 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
-export default defineConfig({
-  base: '/static/',
+export default defineConfig(({ command }) => ({
+  // Only prefix asset URLs with /static/ for production builds (so Django's
+  // whitenoise-served STATIC_URL matches). The dev server serves from root.
+  base: command === 'build' ? '/static/' : '/',
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
@@ -15,4 +17,4 @@ export default defineConfig({
     outDir: '../backend/frontend_dist',
     emptyOutDir: true,
   },
-})
+}))
