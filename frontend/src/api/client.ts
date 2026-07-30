@@ -2,6 +2,8 @@ import type {
   Assignment,
   CapabilitySearchResult,
   Certification,
+  CreatedUser,
+  CreateUserPayload,
   CurrentUser,
   DashboardSummary,
   Employee,
@@ -89,6 +91,10 @@ export const auth = {
     api.post<CurrentUser>('/auth/login/', { username, password }),
   logout: () => api.post<{ detail: string }>('/auth/logout/'),
   me: () => api.get<CurrentUser>('/auth/me/'),
+};
+
+export const usersApi = {
+  create: (data: CreateUserPayload) => api.post<CreatedUser>('/users/create/', data),
 };
 
 export const rolesApi = {

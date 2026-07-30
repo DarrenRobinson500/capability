@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import { employeesApi, positionsApi, rolesApi } from '../api/client';
-import type { Employee, Position, RoleTemplate } from '../api/types';
+import { employeesApi, positionsApi, rolesApi, usersApi } from '../api/client';
+import type { Employee, Position, RoleTemplate, UserRole } from '../api/types';
+
+const USER_ROLES: UserRole[] = ['EMPLOYEE', 'MANAGER', 'HR_ADMIN', 'EXECUTIVE'];
 
 export default function OrgStructureBuilderPage() {
   const [roles, setRoles] = useState<RoleTemplate[]>([]);
@@ -18,6 +20,14 @@ export default function OrgStructureBuilderPage() {
   const [posParent, setPosParent] = useState<number | ''>('');
   const [posDepartment, setPosDepartment] = useState('');
   const [posEmployee, setPosEmployee] = useState<number | ''>('');
+
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newUserRole, setNewUserRole] = useState<UserRole>('EMPLOYEE');
+  const [newUserEmployeeName, setNewUserEmployeeName] = useState('');
+  const [newUserLocation, setNewUserLocation] = useState('');
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [userCreatedMessage, setUserCreatedMessage] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -76,6 +86,37 @@ export default function OrgStructureBuilderPage() {
     }
   }
 
+  async function createUser() {
+    if (!newUsername.trim() || !newPassword) return;
+    setError(null);
+    setUserCreatedMessage(null);
+    setCreatingUser(true);
+    try {
+      const created = await usersApi.create({
+        username: newUsername.trim(),
+        password: newPassword,
+        role: newUserRole,
+        employee_name: newUserEmployeeName.trim() || undefined,
+        location: newUserLocation.trim() || undefined,
+      });
+      setUserCreatedMessage(`Created "${created.username}" (${created.role})${created.employee_name ? ` — ${created.employee_name}` : ''}.`);
+      setNewUsername('');
+      setNewPassword('');
+      setNewUserRole('EMPLOYEE');
+      setNewUserEmployeeName('');
+      setNewUserLocation('');
+      await load();
+    } catch (err) {
+      const message =
+        err && typeof err === 'object' && 'body' in err
+          ? (err.body as { detail?: string }).detail
+          : undefined;
+      setError(message ?? 'Failed to create user.');
+    } finally {
+      setCreatingUser(false);
+    }
+  }
+
   async function reassignEmployee(position: Position, employeeId: number | '') {
     setError(null);
     try {
@@ -92,6 +133,73 @@ export default function OrgStructureBuilderPage() {
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">Org Structure Builder</h1>
       {error && <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+      {userCreatedMessage && (
+        <div className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">{userCreatedMessage}</div>
+      )}
+
+      <section className="rounded-xl border border-gray-200 bg-white p-4">
+        <h2 className="mb-3 font-medium">Create user</h2>
+        <p className="mb-3 text-sm text-gray-500">
+          There's no self-registration — this is the only way to provision a new login. Employee name is
+          optional: leave it blank for an HR Admin/Executive account that doesn't need an org-chart Position.
+        </p>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="text-sm">
+            Username
+            <input
+              className="mt-1 block rounded-md border border-gray-300 px-2 py-1.5"
+              value={newUsername}
+              onChange={(e) => setNewUsername(e.target.value)}
+            />
+          </label>
+          <label className="text-sm">
+            Password
+            <input
+              type="password"
+              className="mt-1 block rounded-md border border-gray-300 px-2 py-1.5"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+          </label>
+          <label className="text-sm">
+            Role
+            <select
+              className="mt-1 block rounded-md border border-gray-300 px-2 py-1.5"
+              value={newUserRole}
+              onChange={(e) => setNewUserRole(e.target.value as UserRole)}
+            >
+              {USER_ROLES.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm">
+            Employee name (optional)
+            <input
+              className="mt-1 block rounded-md border border-gray-300 px-2 py-1.5"
+              value={newUserEmployeeName}
+              onChange={(e) => setNewUserEmployeeName(e.target.value)}
+            />
+          </label>
+          <label className="text-sm">
+            Location (optional)
+            <input
+              className="mt-1 block rounded-md border border-gray-300 px-2 py-1.5"
+              value={newUserLocation}
+              onChange={(e) => setNewUserLocation(e.target.value)}
+            />
+          </label>
+          <button
+            onClick={() => void createUser()}
+            disabled={!newUsername.trim() || !newPassword || creatingUser}
+            className="rounded-md bg-orange-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
+          >
+            {creatingUser ? 'Creating…' : 'Create user'}
+          </button>
+        </div>
+      </section>
 
       <section className="rounded-xl border border-gray-200 bg-white p-4">
         <h2 className="mb-3 font-medium">Role templates</h2>

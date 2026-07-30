@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
 from django.middleware.csrf import get_token
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -83,3 +84,48 @@ def logout_view(request):
 @permission_classes([IsAuthenticated])
 def me_view(request):
     return Response(_serialize_current_user(request.user))
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_user_view(request):
+    """POST /api/users/create/ — HR Admin only. Creates a Django User (with
+    its auto-created Profile then given the requested role) and, if a name
+    is supplied, an Employee record linked to it in one step. There's no
+    self-registration anywhere in this app — this is the only way to
+    provision a new login, matching Section 1's "HR owns ... org structure".
+    """
+    if get_role(request.user) != Profile.Role.HR_ADMIN:
+        return Response({'detail': 'Not permitted.'}, status=403)
+
+    username = request.data.get('username', '').strip()
+    password = request.data.get('password', '')
+    role = request.data.get('role', Profile.Role.EMPLOYEE)
+    employee_name = request.data.get('employee_name', '').strip()
+    location = request.data.get('location', '')
+
+    if not username or not password:
+        return Response({'detail': 'username and password are required.'}, status=400)
+    if role not in Profile.Role.values:
+        return Response({'detail': f'role must be one of {Profile.Role.values}.'}, status=400)
+    if User.objects.filter(username=username).exists():
+        return Response({'detail': 'That username is already taken.'}, status=400)
+
+    new_user = User.objects.create_user(username=username, password=password)
+    new_user.profile.role = role
+    new_user.profile.save()
+
+    employee = None
+    if employee_name:
+        employee = Employee.objects.create(user=new_user, name=employee_name, location=location)
+
+    return Response(
+        {
+            'id': new_user.id,
+            'username': new_user.username,
+            'role': new_user.profile.role,
+            'employee_id': employee.id if employee else None,
+            'employee_name': employee.name if employee else None,
+        },
+        status=201,
+    )

@@ -198,3 +198,19 @@ export interface DashboardSummary {
   certification_counts: Record<CertificationStatus, number>;
   by_department: { department: string; total: number; vacant: number }[];
 }
+
+export interface CreateUserPayload {
+  username: string;
+  password: string;
+  role: UserRole;
+  employee_name?: string;
+  location?: string;
+}
+
+export interface CreatedUser {
+  id: number;
+  username: string;
+  role: UserRole;
+  employee_id: number | null;
+  employee_name: string | null;
+}
