@@ -190,3 +190,11 @@ export interface PositionRequirementsOverviewEntry {
     required: boolean;
   }[];
 }
+
+export interface DashboardSummary {
+  total_positions: number;
+  vacant_positions: number;
+  bench_count: number;
+  certification_counts: Record<CertificationStatus, number>;
+  by_department: { department: string; total: number; vacant: number }[];
+}

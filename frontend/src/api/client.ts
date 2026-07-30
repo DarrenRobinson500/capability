@@ -3,6 +3,7 @@ import type {
   CapabilitySearchResult,
   Certification,
   CurrentUser,
+  DashboardSummary,
   Employee,
   EmployeeCertification,
   GapAnalysisResult,
@@ -204,4 +205,8 @@ export const capabilitySearchApi = {
 
 export const positionRequirementsOverviewApi = {
   get: () => api.get<PositionRequirementsOverviewEntry[]>('/position-requirements-overview/'),
+};
+
+export const dashboardSummaryApi = {
+  get: () => api.get<DashboardSummary>('/dashboard-summary/'),
 };

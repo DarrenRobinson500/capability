@@ -7,7 +7,7 @@ from rest_framework.routers import DefaultRouter
 
 from certifications.views import CertificationViewSet, EmployeeCertificationViewSet
 from learning.views import LearningResourceViewSet
-from orgstructure.views import PositionViewSet, RoleViewSet, org_chart
+from orgstructure.views import PositionViewSet, RoleViewSet, dashboard_summary, org_chart
 from people.views import EmployeeViewSet, ProfileViewSet, csrf, login_view, logout_view, me_view
 from skills.views import (
     PositionRequirementViewSet,
@@ -50,6 +50,7 @@ urlpatterns = [
     path('auth/logout/', logout_view),
     path('auth/me/', me_view),
     path('org-chart/', org_chart),
+    path('dashboard-summary/', dashboard_summary),
     path('gap-analysis/', gap_analysis),
     path('capability-search/', capability_search),
     path('position-requirements-overview/', position_requirements_overview),
