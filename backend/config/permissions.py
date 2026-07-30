@@ -140,7 +140,23 @@ class IsManagerForPositionRequirement(BasePermission):
     def has_permission(self, request, view):
         if request.method in SAFE_METHODS:
             return bool(request.user and request.user.is_authenticated)
-        return get_role(request.user) in (Profile.Role.MANAGER, Profile.Role.HR_ADMIN)
+        role = get_role(request.user)
+        if role not in (Profile.Role.MANAGER, Profile.Role.HR_ADMIN):
+            return False
+        if request.method == 'POST' and role == Profile.Role.MANAGER:
+            # has_object_permission never runs for create (there's no object
+            # yet), so the subtree check has to happen here instead — without
+            # it a Manager could create a requirement for ANY position, not
+            # just their own team's.
+            position_id = request.data.get('position')
+            if position_id in (None, ''):
+                return True  # let the serializer report the missing required field
+            try:
+                position_id = int(position_id)
+            except (TypeError, ValueError):
+                return True  # let the serializer report the invalid value
+            return position_id in get_managed_subtree_ids(request.user)
+        return True
 
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:
