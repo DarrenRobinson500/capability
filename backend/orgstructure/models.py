@@ -14,6 +14,9 @@ class Role(models.Model):
     )
     description = models.TextField(blank=True)
 
+    class Meta:
+        ordering = ['level', 'title']
+
     def __str__(self):
         return f'{self.title} (L{self.level})'
 
@@ -32,6 +35,9 @@ class Position(models.Model):
     employee = models.OneToOneField(
         'people.Employee', null=True, blank=True, on_delete=models.SET_NULL, related_name='position'
     )
+
+    class Meta:
+        ordering = ['department', 'id']
 
     def clean(self):
         super().clean()

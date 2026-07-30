@@ -25,6 +25,7 @@ class Skill(models.Model):
 
     class Meta:
         unique_together = ('name', 'category')
+        ordering = ['name']
 
     def __str__(self):
         return self.name
@@ -39,6 +40,9 @@ class ProficiencyScale(models.Model):
         Skill, null=True, blank=True, on_delete=models.CASCADE, related_name='proficiency_scales'
     )
     levels = models.JSONField(default=list)
+
+    class Meta:
+        ordering = ['id']
 
     def __str__(self):
         return f'Scale for {self.skill}' if self.skill else 'Default scale'
@@ -67,6 +71,7 @@ class SkillRating(models.Model):
 
     class Meta:
         unique_together = ('employee', 'skill')
+        ordering = ['-rated_at']
 
     def clean(self):
         super().clean()
@@ -95,6 +100,7 @@ class PositionRequirement(models.Model):
 
     class Meta:
         unique_together = ('position', 'skill')
+        ordering = ['id']
 
     def clean(self):
         super().clean()

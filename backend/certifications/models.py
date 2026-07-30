@@ -11,6 +11,9 @@ class Certification(models.Model):
         'skills.Skill', null=True, blank=True, on_delete=models.SET_NULL, related_name='certifications'
     )
 
+    class Meta:
+        ordering = ['name']
+
     def __str__(self):
         return self.name
 
@@ -25,6 +28,9 @@ class EmployeeCertification(models.Model):
     certification = models.ForeignKey(Certification, on_delete=models.CASCADE, related_name='holders')
     issued_at = models.DateField()
     expires_at = models.DateField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-issued_at']
 
     @property
     def status(self):

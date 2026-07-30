@@ -11,5 +11,8 @@ class Assignment(models.Model):
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
 
+    class Meta:
+        ordering = ['name']
+
     def __str__(self):
         return self.name
