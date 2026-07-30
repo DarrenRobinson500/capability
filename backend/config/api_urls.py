@@ -7,7 +7,7 @@ from rest_framework.routers import DefaultRouter
 
 from certifications.views import CertificationViewSet, EmployeeCertificationViewSet
 from learning.views import LearningResourceViewSet
-from orgstructure.views import PositionViewSet, RoleViewSet
+from orgstructure.views import PositionViewSet, RoleViewSet, org_chart
 from people.views import EmployeeViewSet, ProfileViewSet
 from skills.views import (
     PositionRequirementViewSet,
@@ -15,6 +15,9 @@ from skills.views import (
     SkillCategoryViewSet,
     SkillRatingViewSet,
     SkillViewSet,
+    capability_search,
+    gap_analysis,
+    position_requirements_overview,
 )
 from staffing.views import AssignmentViewSet
 
@@ -42,5 +45,9 @@ router.register('assignments', AssignmentViewSet)
 
 urlpatterns = [
     path('health/', health),
+    path('org-chart/', org_chart),
+    path('gap-analysis/', gap_analysis),
+    path('capability-search/', capability_search),
+    path('position-requirements-overview/', position_requirements_overview),
     path('', include(router.urls)),
 ]
