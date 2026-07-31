@@ -40,9 +40,24 @@ class ProficiencyScale(models.Model):
         Skill, null=True, blank=True, on_delete=models.CASCADE, related_name='proficiency_scales'
     )
     levels = models.JSONField(default=list)
+    # {level_name: what this level actually means for this scale} — optional
+    # per level, so a scale can be created before every level is written up.
+    level_descriptions = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ['id']
+
+    def clean(self):
+        super().clean()
+        unknown = set(self.level_descriptions) - set(self.levels)
+        if unknown:
+            raise ValidationError(
+                {'level_descriptions': f'Unknown level(s) not in levels: {sorted(unknown)}'}
+            )
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'Scale for {self.skill}' if self.skill else 'Default scale'

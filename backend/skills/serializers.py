@@ -22,10 +22,10 @@ class SkillSerializer(serializers.ModelSerializer):
         return obj.category.name
 
 
-class ProficiencyScaleSerializer(serializers.ModelSerializer):
+class ProficiencyScaleSerializer(ModelCleanOnSaveMixin, serializers.ModelSerializer):
     class Meta:
         model = ProficiencyScale
-        fields = ['id', 'skill', 'levels']
+        fields = ['id', 'skill', 'levels', 'level_descriptions']
 
 
 class SkillRatingSerializer(ModelCleanOnSaveMixin, serializers.ModelSerializer):

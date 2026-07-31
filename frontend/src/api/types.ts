@@ -70,6 +70,7 @@ export interface ProficiencyScale {
   id: number;
   skill: number | null;
   levels: string[];
+  level_descriptions: Record<string, string>;
 }
 
 export type SkillRatingSource = 'SELF' | 'MANAGER_ENDORSED' | 'MANAGER_ADJUSTED';

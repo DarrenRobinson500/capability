@@ -13,8 +13,13 @@ export default function SkillsAdminPage() {
   const [newSkillName, setNewSkillName] = useState('');
   const [newSkillCategory, setNewSkillCategory] = useState<number | ''>('');
   const [newSkillDescription, setNewSkillDescription] = useState('');
+
   const [scaleSkill, setScaleSkill] = useState<number | ''>('');
   const [scaleLevels, setScaleLevels] = useState('');
+  const [scaleDescriptions, setScaleDescriptions] = useState<Record<string, string>>({});
+
+  const [editingScaleId, setEditingScaleId] = useState<number | null>(null);
+  const [editingDescriptions, setEditingDescriptions] = useState<Record<string, string>>({});
 
   async function load() {
     setLoading(true);
@@ -58,15 +63,55 @@ export default function SkillsAdminPage() {
     await load();
   }
 
-  async function addScale() {
-    const levels = scaleLevels
+  const parsedNewLevels = scaleLevels
+    .split(',')
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  function handleScaleLevelsChange(raw: string) {
+    setScaleLevels(raw);
+    const parsed = raw
       .split(',')
       .map((l) => l.trim())
       .filter(Boolean);
-    if (levels.length === 0) return;
-    await proficiencyScalesApi.create({ skill: scaleSkill || null, levels });
+    // keep whatever the admin already typed for a level that's still present;
+    // drop descriptions for levels that got removed/renamed
+    setScaleDescriptions((prev) => {
+      const next: Record<string, string> = {};
+      parsed.forEach((level) => {
+        next[level] = prev[level] ?? '';
+      });
+      return next;
+    });
+  }
+
+  async function addScale() {
+    if (parsedNewLevels.length === 0) return;
+    const level_descriptions: Record<string, string> = {};
+    parsedNewLevels.forEach((level) => {
+      const desc = (scaleDescriptions[level] ?? '').trim();
+      if (desc) level_descriptions[level] = desc;
+    });
+    await proficiencyScalesApi.create({ skill: scaleSkill || null, levels: parsedNewLevels, level_descriptions });
     setScaleSkill('');
     setScaleLevels('');
+    setScaleDescriptions({});
+    await load();
+  }
+
+  function startEditingScale(scale: ProficiencyScale) {
+    setEditingScaleId(scale.id);
+    setEditingDescriptions({ ...scale.level_descriptions });
+  }
+
+  async function saveScaleDescriptions(scale: ProficiencyScale) {
+    const level_descriptions: Record<string, string> = {};
+    scale.levels.forEach((level) => {
+      const desc = (editingDescriptions[level] ?? '').trim();
+      if (desc) level_descriptions[level] = desc;
+    });
+    await proficiencyScalesApi.update(scale.id, { level_descriptions });
+    setEditingScaleId(null);
     await load();
   }
 
@@ -158,14 +203,54 @@ export default function SkillsAdminPage() {
 
       <section className="rounded-xl border border-gray-200 bg-white p-4">
         <h2 className="mb-3 font-medium">Proficiency scales</h2>
-        <ul className="mb-3 space-y-1 text-sm">
+        <p className="mb-3 text-sm text-gray-500">
+          Each level can have a description explaining what it actually means — this shows up wherever
+          someone picks a level (self-assessments, position requirements, capability search).
+        </p>
+
+        <ul className="mb-4 space-y-3">
           {scales.map((s) => (
-            <li key={s.id}>
-              <span className="font-medium">{s.skill ? skills.find((sk) => sk.id === s.skill)?.name : 'Global default'}</span>
-              : {s.levels.join(' → ')}
+            <li key={s.id} className="rounded-lg border border-gray-100 p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-sm font-medium">
+                  {s.skill ? (skills.find((sk) => sk.id === s.skill)?.name ?? 'Unknown skill') : 'Global default'}
+                </span>
+                {editingScaleId === s.id ? (
+                  <div className="flex gap-3 text-sm">
+                    <button onClick={() => void saveScaleDescriptions(s)} className="text-orange-700 hover:underline">
+                      Save
+                    </button>
+                    <button onClick={() => setEditingScaleId(null)} className="text-gray-500 hover:underline">
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => startEditingScale(s)} className="text-sm text-orange-700 hover:underline">
+                    Edit descriptions
+                  </button>
+                )}
+              </div>
+              <ul className="space-y-1 text-sm">
+                {s.levels.map((level) => (
+                  <li key={level} className="flex items-baseline gap-2">
+                    <span className="w-28 shrink-0 font-medium text-gray-600">{level}</span>
+                    {editingScaleId === s.id ? (
+                      <input
+                        className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                        placeholder="What does this level mean?"
+                        value={editingDescriptions[level] ?? ''}
+                        onChange={(e) => setEditingDescriptions((prev) => ({ ...prev, [level]: e.target.value }))}
+                      />
+                    ) : (
+                      <span className="text-gray-500">{s.level_descriptions[level] || '—'}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
             </li>
           ))}
         </ul>
+
         <div className="flex flex-wrap items-end gap-3">
           <select
             className="rounded-md border border-gray-300 px-2 py-1.5 text-sm"
@@ -183,15 +268,31 @@ export default function SkillsAdminPage() {
             className="min-w-64 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
             placeholder="Levels, comma separated (low to high)"
             value={scaleLevels}
-            onChange={(e) => setScaleLevels(e.target.value)}
+            onChange={(e) => handleScaleLevelsChange(e.target.value)}
           />
           <button
             onClick={() => void addScale()}
-            className="rounded-md bg-orange-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-700"
+            disabled={parsedNewLevels.length === 0}
+            className="rounded-md bg-orange-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
           >
             Add scale
           </button>
         </div>
+        {parsedNewLevels.length > 0 && (
+          <div className="mt-3 space-y-2">
+            <p className="text-sm text-gray-500">Optionally describe what each level means:</p>
+            {parsedNewLevels.map((level) => (
+              <div key={level} className="flex items-center gap-2">
+                <span className="w-28 shrink-0 text-sm font-medium text-gray-600">{level}</span>
+                <input
+                  className="flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                  value={scaleDescriptions[level] ?? ''}
+                  onChange={(e) => setScaleDescriptions((prev) => ({ ...prev, [level]: e.target.value }))}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

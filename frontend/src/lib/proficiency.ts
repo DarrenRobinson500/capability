@@ -1,8 +1,13 @@
 import type { ProficiencyScale } from '../api/types';
 
+function getScaleForSkill(skillId: number, scales: ProficiencyScale[]): ProficiencyScale | undefined {
+  return scales.find((s) => s.skill === skillId) ?? scales.find((s) => s.skill === null);
+}
+
 export function getLevelsForSkill(skillId: number, scales: ProficiencyScale[]): string[] {
-  const specific = scales.find((s) => s.skill === skillId);
-  if (specific) return specific.levels;
-  const global = scales.find((s) => s.skill === null);
-  return global ? global.levels : [];
+  return getScaleForSkill(skillId, scales)?.levels ?? [];
+}
+
+export function getLevelDescription(skillId: number, level: string, scales: ProficiencyScale[]): string | undefined {
+  return getScaleForSkill(skillId, scales)?.level_descriptions[level];
 }

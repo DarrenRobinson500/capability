@@ -54,7 +54,14 @@ class Command(BaseCommand):
                 skills[skill_name] = Skill.objects.create(name=skill_name, category=category)
 
         ProficiencyScale.objects.create(
-            skill=None, levels=['Novice', 'Practitioner', 'Advanced', 'Expert']
+            skill=None,
+            levels=['Novice', 'Practitioner', 'Advanced', 'Expert'],
+            level_descriptions={
+                'Novice': 'Learning the basics; needs guidance and close review on most tasks.',
+                'Practitioner': 'Works independently on routine tasks within this skill.',
+                'Advanced': 'Handles complex or ambiguous problems; others come to them for help.',
+                'Expert': 'Recognized authority; sets direction and mentors others in this skill.',
+            },
         )
         return skills
 
