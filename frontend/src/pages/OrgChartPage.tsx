@@ -25,9 +25,9 @@ function OrgNode({
               : 'border-gray-200 bg-white hover:bg-gray-50'
         }`}
       >
-        <div className="font-medium">{node.is_vacant ? 'Vacant' : node.employee_name}</div>
+        <div className="font-medium">{node.role_title}</div>
         <div className="text-sm text-gray-500">
-          {node.role_title} · {node.department}
+          {node.is_vacant ? 'Vacant' : node.employee_name} · {node.department}
         </div>
       </button>
       {node.direct_reports.length > 0 && (
@@ -86,9 +86,9 @@ export default function OrgChartPage() {
               <p className="text-sm text-gray-500">Select a position to see its required skills.</p>
             ) : (
               <>
-                <div className="mb-1 font-medium">{selected.is_vacant ? 'Vacant' : selected.employee_name}</div>
+                <div className="mb-1 font-medium">{selected.role_title}</div>
                 <div className="mb-3 text-sm text-gray-500">
-                  {selected.role_title} · {selected.department}
+                  {selected.is_vacant ? 'Vacant' : selected.employee_name} · {selected.department}
                 </div>
                 {loadingRequirements ? (
                   <p className="text-sm text-gray-500">Loading…</p>
