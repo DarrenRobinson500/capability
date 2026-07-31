@@ -191,10 +191,6 @@ export default function SkillsAdminPage() {
 
       <section className="rounded-xl border border-gray-200 bg-white p-4">
         <h2 className="mb-3 font-medium">Skills</h2>
-        <p className="mb-3 text-sm text-gray-500">
-          Drag <span className="text-gray-400">⠿</span> to reorder skills within a category. Each level
-          column shows how many people are currently rated at that level.
-        </p>
         <div className="mb-3 space-y-4">
           {categories.map((category) => {
             const categorySkills = skills.filter((s) => s.category === category.id);
