@@ -41,6 +41,7 @@ export default function SkillsAdminPage() {
   const [editingSkillId, setEditingSkillId] = useState<number | null>(null);
   const [editingDescription, setEditingDescription] = useState('');
   const [editingSkillDescriptions, setEditingSkillDescriptions] = useState<Record<string, string>>({});
+  const [expandedSkillId, setExpandedSkillId] = useState<number | null>(null);
 
   async function load() {
     setLoading(true);
@@ -223,7 +224,8 @@ export default function SkillsAdminPage() {
                       {categorySkills.map((s) => (
                         <Fragment key={s.id}>
                           <tr
-                            className="border-b border-gray-100 last:border-0"
+                            className="cursor-pointer border-b border-gray-100 last:border-0 hover:bg-gray-50"
+                            onClick={() => setExpandedSkillId((prev) => (prev === s.id ? null : s.id))}
                             draggable={isHRAdmin}
                             onDragStart={isHRAdmin ? (e) => handleDragStart(e, 'text/skill-id', s.id) : undefined}
                             onDragOver={isHRAdmin ? allowDrop : undefined}
@@ -256,9 +258,14 @@ export default function SkillsAdminPage() {
                             {isHRAdmin && (
                               <td className="p-2 text-right">
                                 <button
-                                  onClick={() =>
-                                    editingSkillId === s.id ? setEditingSkillId(null) : startEditingSkill(s)
-                                  }
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (editingSkillId === s.id) {
+                                      setEditingSkillId(null);
+                                    } else {
+                                      startEditingSkill(s);
+                                    }
+                                  }}
                                   className="text-xs text-orange-700 hover:underline"
                                 >
                                   {editingSkillId === s.id ? 'Close' : 'Edit'}
@@ -313,6 +320,28 @@ export default function SkillsAdminPage() {
                                   >
                                     Cancel
                                   </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                          {expandedSkillId === s.id && editingSkillId !== s.id && (
+                            <tr className="border-b border-gray-100 bg-gray-50 last:border-0">
+                              {isHRAdmin && <td />}
+                              <td colSpan={2 + levels.length + (isHRAdmin ? 1 : 0)} className="p-3">
+                                <div className="space-y-3 text-sm">
+                                  {levels.map((level) => {
+                                    const description = s.level_descriptions[level];
+                                    const names = namesAtLevel(s.id, level);
+                                    return (
+                                      <div key={level}>
+                                        <div className="font-medium text-gray-700">{level}</div>
+                                        {description && <p className="text-gray-500">{description}</p>}
+                                        <p className="text-gray-500">
+                                          {names.length > 0 ? names.join(', ') : 'No one rated at this level yet.'}
+                                        </p>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </td>
                             </tr>
