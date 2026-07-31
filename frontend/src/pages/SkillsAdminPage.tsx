@@ -36,6 +36,7 @@ export default function SkillsAdminPage() {
   const [savingLevels, setSavingLevels] = useState(false);
 
   const [editingSkillId, setEditingSkillId] = useState<number | null>(null);
+  const [editingDescription, setEditingDescription] = useState('');
   const [editingSkillDescriptions, setEditingSkillDescriptions] = useState<Record<string, string>>({});
 
   async function load() {
@@ -168,16 +169,17 @@ export default function SkillsAdminPage() {
 
   function startEditingSkill(skill: Skill) {
     setEditingSkillId(skill.id);
+    setEditingDescription(skill.description);
     setEditingSkillDescriptions({ ...skill.level_descriptions });
   }
 
-  async function saveSkillDescriptions(skill: Skill) {
+  async function saveSkillEdits(skill: Skill) {
     const level_descriptions: Record<string, string> = {};
     levels.forEach((level) => {
       const desc = (editingSkillDescriptions[level] ?? '').trim();
       if (desc) level_descriptions[level] = desc;
     });
-    await skillsApi.update(skill.id, { level_descriptions });
+    await skillsApi.update(skill.id, { description: editingDescription.trim(), level_descriptions });
     setEditingSkillId(null);
     await load();
   }
@@ -249,7 +251,7 @@ export default function SkillsAdminPage() {
                                 }
                                 className="text-xs text-orange-700 hover:underline"
                               >
-                                {editingSkillId === s.id ? 'Close' : 'Define levels'}
+                                {editingSkillId === s.id ? 'Close' : 'Edit'}
                               </button>
                             </td>
                           </tr>
@@ -257,6 +259,16 @@ export default function SkillsAdminPage() {
                             <tr className="border-b border-gray-100 bg-gray-50 last:border-0">
                               <td />
                               <td colSpan={2 + levels.length + 1} className="p-3">
+                                <div className="mb-3">
+                                  <span className="mb-1 block text-xs font-medium text-gray-500">
+                                    Description
+                                  </span>
+                                  <input
+                                    className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"
+                                    value={editingDescription}
+                                    onChange={(e) => setEditingDescription(e.target.value)}
+                                  />
+                                </div>
                                 <p className="mb-2 text-xs text-gray-500">
                                   What does each level mean for <span className="font-medium">{s.name}</span>?
                                 </p>
@@ -279,7 +291,7 @@ export default function SkillsAdminPage() {
                                 </div>
                                 <div className="mt-2 flex gap-3 text-sm">
                                   <button
-                                    onClick={() => void saveSkillDescriptions(s)}
+                                    onClick={() => void saveSkillEdits(s)}
                                     className="text-orange-700 hover:underline"
                                   >
                                     Save
