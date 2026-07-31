@@ -181,28 +181,6 @@ export default function SkillsAdminPage() {
       {error && <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
       <section className="rounded-xl border border-gray-200 bg-white p-4">
-        <h2 className="mb-3 font-medium">Proficiency levels</h2>
-        <p className="mb-3 text-sm text-gray-500">
-          Every skill shares this same set of levels, low to high — what each one actually <em>means</em> is
-          set per skill below.
-        </p>
-        <div className="flex flex-wrap items-end gap-3">
-          <input
-            className="min-w-80 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
-            value={levelsInput}
-            onChange={(e) => setLevelsInput(e.target.value)}
-          />
-          <button
-            onClick={() => void saveLevels()}
-            disabled={savingLevels}
-            className="rounded-md bg-orange-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
-          >
-            Save levels
-          </button>
-        </div>
-      </section>
-
-      <section className="rounded-xl border border-gray-200 bg-white p-4">
         <h2 className="mb-3 font-medium">Skills</h2>
         <p className="mb-3 text-sm text-gray-500">
           Drag <span className="text-gray-400">⠿</span> to reorder skills within a category. Each level
@@ -350,6 +328,28 @@ export default function SkillsAdminPage() {
             className="rounded-md bg-orange-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-700"
           >
             Add skill
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-gray-200 bg-white p-4">
+        <h2 className="mb-3 font-medium">Proficiency levels</h2>
+        <p className="mb-3 text-sm text-gray-500">
+          Every skill shares this same set of levels, low to high — what each one actually <em>means</em> is
+          set per skill above.
+        </p>
+        <div className="flex flex-wrap items-end gap-3">
+          <input
+            className="min-w-80 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+            value={levelsInput}
+            onChange={(e) => setLevelsInput(e.target.value)}
+          />
+          <button
+            onClick={() => void saveLevels()}
+            disabled={savingLevels}
+            className="rounded-md bg-orange-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
+          >
+            Save levels
           </button>
         </div>
       </section>
