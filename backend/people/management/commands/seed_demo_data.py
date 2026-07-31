@@ -48,10 +48,10 @@ class Command(BaseCommand):
             'Data & Analytics': ['SQL', 'Excel', 'Data Analysis', 'Data Visualization'],
         }
         skills = {}
-        for category_name, skill_names in categories.items():
-            category = SkillCategory.objects.create(name=category_name)
-            for skill_name in skill_names:
-                skills[skill_name] = Skill.objects.create(name=skill_name, category=category)
+        for category_order, (category_name, skill_names) in enumerate(categories.items()):
+            category = SkillCategory.objects.create(name=category_name, order=category_order)
+            for skill_order, skill_name in enumerate(skill_names):
+                skills[skill_name] = Skill.objects.create(name=skill_name, category=category, order=skill_order)
 
         ProficiencyScale.objects.create(
             skill=None,

@@ -8,7 +8,7 @@ from .models import PositionRequirement, ProficiencyScale, Skill, SkillCategory,
 class SkillCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = SkillCategory
-        fields = ['id', 'name', 'parent_category']
+        fields = ['id', 'name', 'parent_category', 'order']
 
 
 class SkillSerializer(serializers.ModelSerializer):
@@ -16,7 +16,7 @@ class SkillSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Skill
-        fields = ['id', 'name', 'category', 'category_name', 'description', 'taxonomy_version']
+        fields = ['id', 'name', 'category', 'category_name', 'description', 'taxonomy_version', 'order']
 
     def get_category_name(self, obj):
         return obj.category.name

@@ -141,3 +141,114 @@ class GapAnalysisCalculationTests(TestCase):
         client.force_login(employee_user)
         response = client.get('/api/gap-analysis/?scope=company')
         self.assertEqual(response.status_code, 403)
+
+
+class ReorderTests(TestCase):
+    """Skill categories and skills-within-a-category are HR-controlled,
+    drag-to-reorder lists — the persisted order everyone sees, not just a
+    client-side sort.
+    """
+
+    def setUp(self):
+        self.hr = User.objects.create_user('hr_reorder', password='x')
+        self.hr.profile.role = Profile.Role.HR_ADMIN
+        self.hr.profile.save()
+        self.employee_user = User.objects.create_user('plain_reorder', password='x')
+
+        self.cat_a = SkillCategory.objects.create(name='A', order=0)
+        self.cat_b = SkillCategory.objects.create(name='B', order=1)
+        self.cat_c = SkillCategory.objects.create(name='C', order=2)
+
+        self.skill_1 = Skill.objects.create(name='One', category=self.cat_a, order=0)
+        self.skill_2 = Skill.objects.create(name='Two', category=self.cat_a, order=1)
+        self.skill_3 = Skill.objects.create(name='Three', category=self.cat_a, order=2)
+
+    def test_hr_can_reorder_categories(self):
+        client = Client()
+        client.force_login(self.hr)
+        response = client.post(
+            '/api/skill-categories/reorder/',
+            {'ordered_ids': [self.cat_c.id, self.cat_a.id, self.cat_b.id]},
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.cat_a.refresh_from_db()
+        self.cat_b.refresh_from_db()
+        self.cat_c.refresh_from_db()
+        self.assertEqual(self.cat_c.order, 0)
+        self.assertEqual(self.cat_a.order, 1)
+        self.assertEqual(self.cat_b.order, 2)
+        self.assertEqual(
+            list(SkillCategory.objects.values_list('id', flat=True)),
+            [self.cat_c.id, self.cat_a.id, self.cat_b.id],
+        )
+
+    def test_reorder_categories_rejects_unknown_id(self):
+        client = Client()
+        client.force_login(self.hr)
+        response = client.post(
+            '/api/skill-categories/reorder/',
+            {'ordered_ids': [self.cat_a.id, 999999]},
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_reorder_categories_rejects_duplicates(self):
+        client = Client()
+        client.force_login(self.hr)
+        response = client.post(
+            '/api/skill-categories/reorder/',
+            {'ordered_ids': [self.cat_a.id, self.cat_a.id]},
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_reorder_categories_blocked_for_non_hr(self):
+        client = Client()
+        client.force_login(self.employee_user)
+        response = client.post(
+            '/api/skill-categories/reorder/',
+            {'ordered_ids': [self.cat_b.id, self.cat_a.id, self.cat_c.id]},
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_hr_can_reorder_skills_within_category(self):
+        client = Client()
+        client.force_login(self.hr)
+        response = client.post(
+            '/api/skills/reorder/',
+            {'category': self.cat_a.id, 'ordered_ids': [self.skill_3.id, self.skill_1.id, self.skill_2.id]},
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.skill_1.refresh_from_db()
+        self.skill_2.refresh_from_db()
+        self.skill_3.refresh_from_db()
+        self.assertEqual(self.skill_3.order, 0)
+        self.assertEqual(self.skill_1.order, 1)
+        self.assertEqual(self.skill_2.order, 2)
+
+    def test_reorder_skills_rejects_partial_list(self):
+        """ordered_ids must be exactly that category's skills — a partial
+        list would leave the omitted skill's order ambiguous.
+        """
+        client = Client()
+        client.force_login(self.hr)
+        response = client.post(
+            '/api/skills/reorder/',
+            {'category': self.cat_a.id, 'ordered_ids': [self.skill_1.id, self.skill_2.id]},
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_reorder_skills_rejects_id_from_another_category(self):
+        other_skill = Skill.objects.create(name='Other', category=self.cat_b, order=0)
+        client = Client()
+        client.force_login(self.hr)
+        response = client.post(
+            '/api/skills/reorder/',
+            {'category': self.cat_a.id, 'ordered_ids': [self.skill_1.id, self.skill_2.id, self.skill_3.id, other_skill.id]},
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 400)

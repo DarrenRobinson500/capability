@@ -55,6 +55,7 @@ export interface SkillCategory {
   id: number;
   name: string;
   parent_category: number | null;
+  order: number;
 }
 
 export interface Skill {
@@ -64,6 +65,7 @@ export interface Skill {
   category_name: string;
   description: string;
   taxonomy_version: number;
+  order: number;
 }
 
 export interface ProficiencyScale {

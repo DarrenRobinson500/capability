@@ -31,12 +31,61 @@ class SkillCategoryViewSet(ModelViewSet):
     serializer_class = SkillCategorySerializer
     permission_classes = [DenyExecutive, IsHRAdminOrReadOnly]
 
+    @action(detail=False, methods=['post'])
+    def reorder(self, request):
+        """POST /api/skill-categories/reorder/ {ordered_ids: [...]}
+
+        Sets each category's `order` to its index in ordered_ids. This is
+        the persisted, HR-controlled display order everyone sees — not just
+        the browser that dragged it.
+        """
+        ordered_ids = request.data.get('ordered_ids', [])
+        if not isinstance(ordered_ids, list) or not ordered_ids:
+            return Response({'detail': 'ordered_ids must be a non-empty list.'}, status=400)
+        if len(set(ordered_ids)) != len(ordered_ids):
+            return Response({'detail': 'ordered_ids must not contain duplicates.'}, status=400)
+        matched = SkillCategory.objects.filter(id__in=ordered_ids).count()
+        if matched != len(ordered_ids):
+            return Response({'detail': 'ordered_ids must all be existing category ids.'}, status=400)
+
+        for index, category_id in enumerate(ordered_ids):
+            SkillCategory.objects.filter(id=category_id).update(order=index)
+        return Response({'detail': 'Reordered.'})
+
 
 class SkillViewSet(ModelViewSet):
     queryset = Skill.objects.select_related('category').all()
     serializer_class = SkillSerializer
     permission_classes = [DenyExecutive, IsHRAdminOrReadOnly]
     filterset_fields = ['category']
+
+    @action(detail=False, methods=['post'])
+    def reorder(self, request):
+        """POST /api/skills/reorder/ {category: <id>, ordered_ids: [...]}
+
+        Sets the `order` of each skill in ordered_ids to its index — scoped
+        to one category at a time, since skills are ordered within their
+        category, not globally. ordered_ids must be exactly that category's
+        current skills (no partial reorder, no cross-category tampering).
+        """
+        category_id = request.data.get('category')
+        ordered_ids = request.data.get('ordered_ids', [])
+        if not category_id:
+            return Response({'detail': 'category is required.'}, status=400)
+        if not isinstance(ordered_ids, list) or not ordered_ids:
+            return Response({'detail': 'ordered_ids must be a non-empty list.'}, status=400)
+        if len(set(ordered_ids)) != len(ordered_ids):
+            return Response({'detail': 'ordered_ids must not contain duplicates.'}, status=400)
+
+        category_skill_ids = set(Skill.objects.filter(category_id=category_id).values_list('id', flat=True))
+        if set(ordered_ids) != category_skill_ids:
+            return Response(
+                {'detail': 'ordered_ids must be exactly the current skills in that category.'}, status=400
+            )
+
+        for index, skill_id in enumerate(ordered_ids):
+            Skill.objects.filter(id=skill_id).update(order=index)
+        return Response({'detail': 'Reordered.'})
 
 
 class ProficiencyScaleViewSet(ModelViewSet):

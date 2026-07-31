@@ -128,6 +128,8 @@ export const skillCategoriesApi = {
   update: (id: number, data: Partial<SkillCategory>) =>
     api.patch<SkillCategory>(`/skill-categories/${id}/`, data),
   delete: (id: number) => api.delete(`/skill-categories/${id}/`),
+  reorder: (orderedIds: number[]) =>
+    api.post<{ detail: string }>('/skill-categories/reorder/', { ordered_ids: orderedIds }),
 };
 
 export const skillsApi = {
@@ -135,6 +137,8 @@ export const skillsApi = {
   create: (data: Partial<Skill>) => api.post<Skill>('/skills/', data),
   update: (id: number, data: Partial<Skill>) => api.patch<Skill>(`/skills/${id}/`, data),
   delete: (id: number) => api.delete(`/skills/${id}/`),
+  reorder: (category: number, orderedIds: number[]) =>
+    api.post<{ detail: string }>('/skills/reorder/', { category, ordered_ids: orderedIds }),
 };
 
 export const proficiencyScalesApi = {

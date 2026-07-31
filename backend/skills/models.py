@@ -7,9 +7,13 @@ class SkillCategory(models.Model):
     parent_category = models.ForeignKey(
         'self', null=True, blank=True, on_delete=models.SET_NULL, related_name='subcategories'
     )
+    # HR-controlled display order (drag-to-reorder), not alphabetical —
+    # see SkillCategoryViewSet.reorder().
+    order = models.IntegerField(default=0)
 
     class Meta:
         verbose_name_plural = 'skill categories'
+        ordering = ['order']
 
     def __str__(self):
         return self.name
@@ -22,10 +26,12 @@ class Skill(models.Model):
     # Bumped on meaningful redefinition of what this skill means, so old
     # ratings against a prior definition can be told apart from current ones.
     taxonomy_version = models.IntegerField(default=1)
+    # HR-controlled display order within its category — see SkillViewSet.reorder().
+    order = models.IntegerField(default=0)
 
     class Meta:
         unique_together = ('name', 'category')
-        ordering = ['name']
+        ordering = ['category__order', 'order']
 
     def __str__(self):
         return self.name
