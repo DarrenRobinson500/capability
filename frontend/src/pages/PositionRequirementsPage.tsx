@@ -76,7 +76,7 @@ export default function PositionRequirementsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Position Requirements</h1>
+      <h1 className="text-xl font-semibold">Positions</h1>
       {error && <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
       <label className="block text-sm">

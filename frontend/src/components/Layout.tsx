@@ -10,13 +10,13 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/org-chart', label: 'Org Chart', show: () => true },
   { to: '/admin/skills', label: 'Skills', show: (role) => role === 'HR_ADMIN' },
-  { to: '/profile', label: 'My Skills Profile', show: (_role, hasEmployee) => hasEmployee },
-  { to: '/team', label: 'Team Skills Matrix', show: (role) => role === 'MANAGER' },
   {
     to: '/requirements',
-    label: 'Position Requirements',
+    label: 'Positions',
     show: (role) => role === 'MANAGER' || role === 'HR_ADMIN',
   },
+  { to: '/profile', label: 'My Skills Profile', show: (_role, hasEmployee) => hasEmployee },
+  { to: '/team', label: 'Team Skills Matrix', show: (role) => role === 'MANAGER' },
   { to: '/admin/org-structure', label: 'Org Structure Builder', show: (role) => role === 'HR_ADMIN' },
   {
     to: '/reports/gaps',
