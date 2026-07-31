@@ -77,7 +77,7 @@ commands themselves.
    - `SECRET_KEY` — any long random string.
    - `DEBUG` — leave unset or `False`.
    - `CSRF_TRUSTED_ORIGINS` — your Railway-assigned domain, e.g. `https://your-app.up.railway.app` (comma-separate if you add a custom domain later).
-   - `ALLOWED_HOSTS` — usually unnecessary; the app auto-adds Railway's `RAILWAY_PUBLIC_DOMAIN` (set automatically by Railway) to the allowed-hosts list.
+   - `ALLOWED_HOSTS` — set this explicitly to your Railway domain, e.g. `capability-production.up.railway.app` (comma-separate if you add a custom domain later). The app also auto-adds Railway's `RAILWAY_PUBLIC_DOMAIN` if present, but that variable isn't reliably available at boot if the container started before the domain was generated — set `ALLOWED_HOSTS` directly rather than relying on it.
 4. After the first deploy, run migrations and (optionally) the seed command
    from a Railway shell against the service: `python manage.py migrate`,
    `python manage.py seed_demo_data`, `python manage.py createsuperuser`.
