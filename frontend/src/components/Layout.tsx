@@ -9,7 +9,10 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { to: '/org-chart', label: 'Org Chart', show: () => true },
-  { to: '/admin/skills', label: 'Skills', show: (role) => role === 'HR_ADMIN' },
+  // Executives are excluded — the backend blocks that role from every
+  // standard model viewset (DenyExecutive), so this page would just error
+  // out for them; they get aggregate endpoints (Gap Analysis) instead.
+  { to: '/admin/skills', label: 'Skills', show: (role) => role !== 'EXECUTIVE' },
   {
     to: '/requirements',
     label: 'Positions',
@@ -22,13 +25,6 @@ const NAV_ITEMS: NavItem[] = [
     to: '/reports/gaps',
     label: 'Gap Analysis',
     show: (role) => role === 'MANAGER' || role === 'HR_ADMIN' || role === 'EXECUTIVE',
-  },
-  { to: '/search', label: 'Capability Search', show: (role) => role === 'MANAGER' || role === 'HR_ADMIN' },
-  { to: '/certifications', label: 'Certifications', show: () => true },
-  {
-    to: '/dashboard',
-    label: 'Dashboard',
-    show: (role) => role === 'EXECUTIVE' || role === 'HR_ADMIN',
   },
 ];
 

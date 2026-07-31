@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from 'react';
 import type { DragEvent } from 'react';
 import { proficiencyScalesApi, skillCategoriesApi, skillRatingsApi, skillsApi } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import { getProficiencyLevels } from '../lib/proficiency';
 import type { ProficiencyScale, Skill, SkillCategory, SkillRating } from '../api/types';
 
@@ -20,6 +21,8 @@ function DragHandle() {
 }
 
 export default function SkillsAdminPage() {
+  const { user } = useAuth();
+  const isHRAdmin = user?.role === 'HR_ADMIN';
   const [categories, setCategories] = useState<SkillCategory[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [scales, setScales] = useState<ProficiencyScale[]>([]);
@@ -205,7 +208,7 @@ export default function SkillsAdminPage() {
                   <table className="w-full text-left text-sm">
                     <thead className="text-xs text-gray-400">
                       <tr>
-                        <th className="w-6" />
+                        {isHRAdmin && <th className="w-6" />}
                         <th className="w-40 p-2 font-normal">Name</th>
                         <th className="p-2 font-normal">Description</th>
                         {levels.map((level) => (
@@ -213,7 +216,7 @@ export default function SkillsAdminPage() {
                             {level}
                           </th>
                         ))}
-                        <th className="p-2" />
+                        {isHRAdmin && <th className="p-2" />}
                       </tr>
                     </thead>
                     <tbody>
@@ -221,18 +224,24 @@ export default function SkillsAdminPage() {
                         <Fragment key={s.id}>
                           <tr
                             className="border-b border-gray-100 last:border-0"
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, 'text/skill-id', s.id)}
-                            onDragOver={allowDrop}
-                            onDrop={(e) => {
-                              e.preventDefault();
-                              const draggedId = Number(e.dataTransfer.getData('text/skill-id'));
-                              if (draggedId) void moveSkill(category.id, draggedId, s.id);
-                            }}
+                            draggable={isHRAdmin}
+                            onDragStart={isHRAdmin ? (e) => handleDragStart(e, 'text/skill-id', s.id) : undefined}
+                            onDragOver={isHRAdmin ? allowDrop : undefined}
+                            onDrop={
+                              isHRAdmin
+                                ? (e) => {
+                                    e.preventDefault();
+                                    const draggedId = Number(e.dataTransfer.getData('text/skill-id'));
+                                    if (draggedId) void moveSkill(category.id, draggedId, s.id);
+                                  }
+                                : undefined
+                            }
                           >
-                            <td className="p-2">
-                              <DragHandle />
-                            </td>
+                            {isHRAdmin && (
+                              <td className="p-2">
+                                <DragHandle />
+                              </td>
+                            )}
                             <td className="p-2 font-medium">{s.name}</td>
                             <td className="p-2 text-gray-500">{s.description || '—'}</td>
                             {levelCountsForSkill(s.id).map(({ level, count }) => (
@@ -244,16 +253,18 @@ export default function SkillsAdminPage() {
                                 {count}
                               </td>
                             ))}
-                            <td className="p-2 text-right">
-                              <button
-                                onClick={() =>
-                                  editingSkillId === s.id ? setEditingSkillId(null) : startEditingSkill(s)
-                                }
-                                className="text-xs text-orange-700 hover:underline"
-                              >
-                                {editingSkillId === s.id ? 'Close' : 'Edit'}
-                              </button>
-                            </td>
+                            {isHRAdmin && (
+                              <td className="p-2 text-right">
+                                <button
+                                  onClick={() =>
+                                    editingSkillId === s.id ? setEditingSkillId(null) : startEditingSkill(s)
+                                  }
+                                  className="text-xs text-orange-700 hover:underline"
+                                >
+                                  {editingSkillId === s.id ? 'Close' : 'Edit'}
+                                </button>
+                              </td>
+                            )}
                           </tr>
                           {editingSkillId === s.id && (
                             <tr className="border-b border-gray-100 bg-gray-50 last:border-0">
@@ -315,40 +326,44 @@ export default function SkillsAdminPage() {
             );
           })}
         </div>
-        <div className="flex flex-wrap items-end gap-3">
-          <input
-            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm"
-            placeholder="New skill name"
-            value={newSkillName}
-            onChange={(e) => setNewSkillName(e.target.value)}
-          />
-          <select
-            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm"
-            value={newSkillCategory}
-            onChange={(e) => setNewSkillCategory(e.target.value ? Number(e.target.value) : '')}
-          >
-            <option value="">Category…</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <input
-            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm"
-            placeholder="Description (optional)"
-            value={newSkillDescription}
-            onChange={(e) => setNewSkillDescription(e.target.value)}
-          />
-          <button
-            onClick={() => void addSkill()}
-            className="rounded-md bg-orange-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-700"
-          >
-            Add skill
-          </button>
-        </div>
+        {isHRAdmin && (
+          <div className="flex flex-wrap items-end gap-3">
+            <input
+              className="rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+              placeholder="New skill name"
+              value={newSkillName}
+              onChange={(e) => setNewSkillName(e.target.value)}
+            />
+            <select
+              className="rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+              value={newSkillCategory}
+              onChange={(e) => setNewSkillCategory(e.target.value ? Number(e.target.value) : '')}
+            >
+              <option value="">Category…</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <input
+              className="rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+              placeholder="Description (optional)"
+              value={newSkillDescription}
+              onChange={(e) => setNewSkillDescription(e.target.value)}
+            />
+            <button
+              onClick={() => void addSkill()}
+              className="rounded-md bg-orange-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-700"
+            >
+              Add skill
+            </button>
+          </div>
+        )}
       </section>
 
+      {isHRAdmin && (
+      <>
       <section className="rounded-xl border border-gray-200 bg-white p-4">
         <h2 className="mb-3 font-medium">Proficiency levels</h2>
         <p className="mb-3 text-sm text-gray-500">
@@ -411,6 +426,8 @@ export default function SkillsAdminPage() {
           </button>
         </div>
       </section>
+      </>
+      )}
     </div>
   );
 }
