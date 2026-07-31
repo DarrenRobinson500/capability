@@ -1,7 +1,7 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.middleware.csrf import get_token
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -74,8 +74,18 @@ def login_view(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def logout_view(request):
+    """No SessionAuthentication here on purpose: DRF's SessionAuthentication
+    enforces CSRF on every authenticated request regardless of the view's
+    own permission_classes, so a stale/rotated CSRF token would otherwise
+    make logout itself return 403 — the one request that should never get
+    a user stuck. request.session is still the real Django session (DRF's
+    Request proxies it straight through), so logout(request) flushes it
+    correctly either way. Worst case of skipping the check here is a
+    CSRF-forced logout, not a security escalation.
+    """
     logout(request)
     return Response({'detail': 'Logged out.'})
 

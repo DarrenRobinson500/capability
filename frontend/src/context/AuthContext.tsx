@@ -35,8 +35,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    await auth.logout();
-    setUser(null);
+    // Clear local state even if the request itself fails — the user should
+    // never get stuck on a "logged in" screen just because the logout call
+    // hit a network hiccup or a server error. Worst case, a stale session
+    // cookie lingers server-side until it expires on its own.
+    try {
+      await auth.logout();
+    } finally {
+      setUser(null);
+    }
   }, []);
 
   return <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>;
