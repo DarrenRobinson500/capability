@@ -88,7 +88,8 @@ export default function OrgChartPage() {
               <>
                 <div className="mb-1 font-medium">{selected.role_title}</div>
                 <div className="mb-3 text-sm text-gray-500">
-                  {selected.is_vacant ? 'Vacant' : selected.employee_name} · {selected.department}
+                  {selected.is_vacant ? 'Vacant · ' : ''}
+                  {selected.department}
                 </div>
                 {loadingRequirements ? (
                   <p className="text-sm text-gray-500">Loading…</p>
