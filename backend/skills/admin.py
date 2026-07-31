@@ -5,20 +5,20 @@ from .models import PositionRequirement, ProficiencyScale, Skill, SkillCategory,
 
 @admin.register(SkillCategory)
 class SkillCategoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'parent_category')
+    list_display = ('name', 'order', 'parent_category')
     search_fields = ('name',)
 
 
 @admin.register(Skill)
 class SkillAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'taxonomy_version')
+    list_display = ('name', 'category', 'order', 'taxonomy_version')
     list_filter = ('category',)
     search_fields = ('name',)
 
 
 @admin.register(ProficiencyScale)
 class ProficiencyScaleAdmin(admin.ModelAdmin):
-    list_display = ('skill', 'levels')
+    list_display = ('levels',)
 
 
 @admin.register(SkillRating)

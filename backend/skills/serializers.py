@@ -11,12 +11,15 @@ class SkillCategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'parent_category', 'order']
 
 
-class SkillSerializer(serializers.ModelSerializer):
+class SkillSerializer(ModelCleanOnSaveMixin, serializers.ModelSerializer):
     category_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Skill
-        fields = ['id', 'name', 'category', 'category_name', 'description', 'taxonomy_version', 'order']
+        fields = [
+            'id', 'name', 'category', 'category_name', 'description', 'taxonomy_version', 'order',
+            'level_descriptions',
+        ]
 
     def get_category_name(self, obj):
         return obj.category.name
@@ -25,7 +28,7 @@ class SkillSerializer(serializers.ModelSerializer):
 class ProficiencyScaleSerializer(ModelCleanOnSaveMixin, serializers.ModelSerializer):
     class Meta:
         model = ProficiencyScale
-        fields = ['id', 'skill', 'levels', 'level_descriptions']
+        fields = ['id', 'levels']
 
 
 class SkillRatingSerializer(ModelCleanOnSaveMixin, serializers.ModelSerializer):

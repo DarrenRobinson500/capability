@@ -66,13 +66,17 @@ export interface Skill {
   description: string;
   taxonomy_version: number;
   order: number;
+  // What each shared proficiency level (see ProficiencyScale) actually
+  // means for this specific skill. Optional per level.
+  level_descriptions: Record<string, string>;
 }
 
 export interface ProficiencyScale {
   id: number;
-  skill: number | null;
+  // The single shared, ordered list of level names every skill uses
+  // (e.g. Novice < Practitioner < Advanced < Expert) — there is only ever
+  // one of these; see Skill.level_descriptions for the per-skill meaning.
   levels: string[];
-  level_descriptions: Record<string, string>;
 }
 
 export type SkillRatingSource = 'SELF' | 'MANAGER_ENDORSED' | 'MANAGER_ADJUSTED';

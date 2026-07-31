@@ -1,13 +1,11 @@
-import type { ProficiencyScale } from '../api/types';
+import type { ProficiencyScale, Skill } from '../api/types';
 
-function getScaleForSkill(skillId: number, scales: ProficiencyScale[]): ProficiencyScale | undefined {
-  return scales.find((s) => s.skill === skillId) ?? scales.find((s) => s.skill === null);
+/** The single shared, ordered list of proficiency level names every skill uses. */
+export function getProficiencyLevels(scales: ProficiencyScale[]): string[] {
+  return scales[0]?.levels ?? [];
 }
 
-export function getLevelsForSkill(skillId: number, scales: ProficiencyScale[]): string[] {
-  return getScaleForSkill(skillId, scales)?.levels ?? [];
-}
-
-export function getLevelDescription(skillId: number, level: string, scales: ProficiencyScale[]): string | undefined {
-  return getScaleForSkill(skillId, scales)?.level_descriptions[level];
+/** What a given level actually means for a specific skill (varies per skill). */
+export function getLevelDescription(skillId: number, level: string, skills: Skill[]): string | undefined {
+  return skills.find((s) => s.id === skillId)?.level_descriptions[level];
 }

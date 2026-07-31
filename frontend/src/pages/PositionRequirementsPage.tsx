@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { positionRequirementsApi, positionsApi, proficiencyScalesApi, skillsApi } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { getSubtreePositionIds } from '../lib/orgTree';
-import { getLevelDescription, getLevelsForSkill } from '../lib/proficiency';
+import { getLevelDescription, getProficiencyLevels } from '../lib/proficiency';
 import type { Position, PositionRequirement, ProficiencyScale, Skill } from '../api/types';
 
 export default function PositionRequirementsPage() {
@@ -44,8 +44,8 @@ export default function PositionRequirementsPage() {
     positionRequirementsApi.list({ position: selectedPosition }).then((res) => setRequirements(res.results));
   }, [selectedPosition]);
 
-  const availableLevels = newSkill ? getLevelsForSkill(newSkill, scales) : [];
-  const newLevelDescription = newSkill && newLevel ? getLevelDescription(newSkill, newLevel, scales) : undefined;
+  const availableLevels = getProficiencyLevels(scales);
+  const newLevelDescription = newSkill && newLevel ? getLevelDescription(newSkill, newLevel, skills) : undefined;
 
   async function addRequirement() {
     if (!selectedPosition || !newSkill || !newLevel) return;
@@ -114,7 +114,7 @@ export default function PositionRequirementsPage() {
                   {requirements.map((r) => (
                     <tr key={r.id} className="border-b border-gray-100 last:border-0">
                       <td className="p-3 font-medium">{r.skill_name}</td>
-                      <td className="p-3" title={getLevelDescription(r.skill, r.min_proficiency, scales)}>
+                      <td className="p-3" title={getLevelDescription(r.skill, r.min_proficiency, skills)}>
                         {r.min_proficiency}
                       </td>
                       <td className="p-3">{r.required ? 'Required' : 'Nice-to-have'}</td>

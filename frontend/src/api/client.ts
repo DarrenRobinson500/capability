@@ -142,11 +142,10 @@ export const skillsApi = {
 };
 
 export const proficiencyScalesApi = {
+  // Singleton — there is only ever one row; no create/delete.
   list: () => api.get<Paginated<ProficiencyScale>>('/proficiency-scales/'),
-  create: (data: Partial<ProficiencyScale>) => api.post<ProficiencyScale>('/proficiency-scales/', data),
   update: (id: number, data: Partial<ProficiencyScale>) =>
     api.patch<ProficiencyScale>(`/proficiency-scales/${id}/`, data),
-  delete: (id: number) => api.delete(`/proficiency-scales/${id}/`),
 };
 
 export const skillRatingsApi = {

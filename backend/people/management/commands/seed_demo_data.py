@@ -47,22 +47,54 @@ class Command(BaseCommand):
             'Sales & CRM': ['CRM Tools', 'Prospecting', 'Objection Handling', 'Contract Negotiation'],
             'Data & Analytics': ['SQL', 'Excel', 'Data Analysis', 'Data Visualization'],
         }
+        # Every skill shares these same level *names* — an executive call so
+        # the Skills page can show one column per level across all skills.
+        # What each level actually *means* still varies per skill (below).
+        ProficiencyScale.objects.create(levels=['Novice', 'Practitioner', 'Advanced', 'Expert'])
+
+        level_descriptions = {
+            'Python': {
+                'Novice': "Can write simple scripts with guidance; not yet comfortable with the language's idioms.",
+                'Practitioner': 'Writes clean, working Python for typical tasks without supervision.',
+                'Advanced': 'Designs Python systems/libraries others build on; handles performance and architecture tradeoffs.',
+                'Expert': 'Sets Python coding standards org-wide; the go-to person for the hardest language-level problems.',
+            },
+            'System Design': {
+                'Novice': 'Can follow an existing design; struggles to design a new system from scratch.',
+                'Practitioner': 'Designs straightforward systems (a service, a schema) that meet requirements.',
+                'Advanced': 'Designs systems that scale and evolve; anticipates failure modes others miss.',
+                'Expert': 'Sets architectural direction across multiple systems and teams.',
+            },
+            'Leadership': {
+                'Novice': "Leads by example day-to-day; not yet responsible for others' output.",
+                'Practitioner': 'Effectively leads a small team on well-defined goals.',
+                'Advanced': 'Leads through ambiguity and change; develops other leaders.',
+                'Expert': 'Shapes leadership practice and culture across the org.',
+            },
+            'CRM Tools': {
+                'Novice': 'Can log activity and look up records with help.',
+                'Practitioner': 'Manages their own pipeline confidently day-to-day.',
+                'Advanced': 'Configures reports and workflows for the team; trains others.',
+                'Expert': 'Owns CRM administration and process design for the whole org.',
+            },
+            'Data Analysis': {
+                'Novice': 'Can run pre-built reports; needs help interpreting results.',
+                'Practitioner': 'Independently analyzes data to answer routine business questions.',
+                'Advanced': 'Finds non-obvious insights and designs analyses from scratch.',
+                'Expert': 'Sets the analytical approach and standards other analysts follow.',
+            },
+        }
+
         skills = {}
         for category_order, (category_name, skill_names) in enumerate(categories.items()):
             category = SkillCategory.objects.create(name=category_name, order=category_order)
             for skill_order, skill_name in enumerate(skill_names):
-                skills[skill_name] = Skill.objects.create(name=skill_name, category=category, order=skill_order)
-
-        ProficiencyScale.objects.create(
-            skill=None,
-            levels=['Novice', 'Practitioner', 'Advanced', 'Expert'],
-            level_descriptions={
-                'Novice': 'Learning the basics; needs guidance and close review on most tasks.',
-                'Practitioner': 'Works independently on routine tasks within this skill.',
-                'Advanced': 'Handles complex or ambiguous problems; others come to them for help.',
-                'Expert': 'Recognized authority; sets direction and mentors others in this skill.',
-            },
-        )
+                skills[skill_name] = Skill.objects.create(
+                    name=skill_name,
+                    category=category,
+                    order=skill_order,
+                    level_descriptions=level_descriptions.get(skill_name, {}),
+                )
         return skills
 
     # -- Roles --------------------------------------------------------------

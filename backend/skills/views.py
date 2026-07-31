@@ -16,7 +16,7 @@ from orgstructure.models import Position
 from orgstructure.services import get_subtree_position_ids
 from people.models import Profile
 
-from .models import PositionRequirement, ProficiencyScale, Skill, SkillCategory, SkillRating, get_scale_for_skill
+from .models import PositionRequirement, ProficiencyScale, Skill, SkillCategory, SkillRating, get_proficiency_levels
 from .serializers import (
     PositionRequirementSerializer,
     ProficiencyScaleSerializer,
@@ -89,9 +89,15 @@ class SkillViewSet(ModelViewSet):
 
 
 class ProficiencyScaleViewSet(ModelViewSet):
-    queryset = ProficiencyScale.objects.select_related('skill').all()
+    """There is only ever one row (see ProficiencyScale.clean()) — no
+    create/delete via the API, just read/update, same pattern as
+    people.views.ProfileViewSet.
+    """
+
+    queryset = ProficiencyScale.objects.all()
     serializer_class = ProficiencyScaleSerializer
     permission_classes = [DenyExecutive, IsHRAdminOrReadOnly]
+    http_method_names = ['get', 'put', 'patch', 'head', 'options']
 
 
 class SkillRatingViewSet(ModelViewSet):
@@ -135,10 +141,10 @@ class PositionRequirementViewSet(ModelViewSet):
         serializer.save(defined_by=self.request.user)
 
 
-def _position_gaps(position):
+def _position_gaps(position, levels):
     """Gaps for one Position: for a vacancy, every requirement is an open
     gap; for a filled Position, compare the employee's SkillRatings against
-    each requirement's min_proficiency using that skill's ProficiencyScale
+    each requirement's min_proficiency using the shared ProficiencyScale
     ordering.
     """
     requirements = position.requirements.select_related('skill')
@@ -173,9 +179,8 @@ def _position_gaps(position):
             })
             continue
 
-        scale = get_scale_for_skill(req.skill)
-        if scale and req.min_proficiency in scale.levels and rating.proficiency_level in scale.levels:
-            if scale.levels.index(rating.proficiency_level) < scale.levels.index(req.min_proficiency):
+        if levels and req.min_proficiency in levels and rating.proficiency_level in levels:
+            if levels.index(rating.proficiency_level) < levels.index(req.min_proficiency):
                 gaps.append({
                     'skill_id': req.skill_id,
                     'skill_name': req.skill.name,
@@ -223,6 +228,7 @@ def gap_analysis(request):
     if role == Profile.Role.MANAGER:
         positions = positions.filter(id__in=get_managed_subtree_ids(request.user))
 
+    levels = get_proficiency_levels()
     result = []
     for position in positions:
         result.append({
@@ -232,7 +238,7 @@ def gap_analysis(request):
             'employee_id': position.employee_id,
             'employee_name': position.employee.name if position.employee_id else None,
             'is_vacant': position.employee_id is None,
-            'gaps': _position_gaps(position),
+            'gaps': _position_gaps(position, levels),
         })
 
     return Response({'scope': scope, 'positions': result})
@@ -258,18 +264,18 @@ def capability_search(request):
         return Response({'error': 'skill not found'}, status=404)
 
     min_level = request.query_params.get('min_level')
-    scale = get_scale_for_skill(skill)
+    levels = get_proficiency_levels()
     min_index = None
-    if min_level and scale and min_level in scale.levels:
-        min_index = scale.levels.index(min_level)
+    if min_level and levels and min_level in levels:
+        min_index = levels.index(min_level)
 
     ratings = SkillRating.objects.filter(skill_id=skill_id).select_related('employee')
     results = []
     for rating in ratings:
         if min_index is not None:
-            if rating.proficiency_level not in scale.levels:
+            if rating.proficiency_level not in levels:
                 continue
-            if scale.levels.index(rating.proficiency_level) < min_index:
+            if levels.index(rating.proficiency_level) < min_index:
                 continue
         results.append({
             'employee_id': rating.employee_id,

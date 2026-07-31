@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Badge from '../components/Badge';
 import { proficiencyScalesApi, skillRatingsApi, skillsApi } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { getLevelDescription, getLevelsForSkill } from '../lib/proficiency';
+import { getLevelDescription, getProficiencyLevels } from '../lib/proficiency';
 import type { ProficiencyScale, Skill, SkillRating } from '../api/types';
 
 export default function ProfilePage() {
@@ -47,10 +47,10 @@ export default function ProfilePage() {
   }
 
   const ratedSkillIds = new Set(ratings.map((r) => r.skill));
-  const availableLevels = selectedSkill ? getLevelsForSkill(selectedSkill, scales) : [];
+  const availableLevels = getProficiencyLevels(scales);
   const existingRating = selectedSkill ? ratings.find((r) => r.skill === selectedSkill) : undefined;
   const selectedLevelDescription =
-    selectedSkill && selectedLevel ? getLevelDescription(selectedSkill, selectedLevel, scales) : undefined;
+    selectedSkill && selectedLevel ? getLevelDescription(selectedSkill, selectedLevel, skills) : undefined;
 
   async function handleSubmit() {
     if (!selectedSkill || !selectedLevel) return;
@@ -160,7 +160,7 @@ export default function ProfilePage() {
               {ratings.map((r) => (
                 <tr key={r.id} className="border-b border-gray-100 last:border-0">
                   <td className="p-3 font-medium">{r.skill_name}</td>
-                  <td className="p-3" title={getLevelDescription(r.skill, r.proficiency_level, scales)}>
+                  <td className="p-3" title={getLevelDescription(r.skill, r.proficiency_level, skills)}>
                     {r.proficiency_level}
                   </td>
                   <td className="p-3">

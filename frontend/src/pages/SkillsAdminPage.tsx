@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import type { DragEvent } from 'react';
 import { proficiencyScalesApi, skillCategoriesApi, skillRatingsApi, skillsApi } from '../api/client';
-import { getLevelsForSkill } from '../lib/proficiency';
+import { getProficiencyLevels } from '../lib/proficiency';
 import type { ProficiencyScale, Skill, SkillCategory, SkillRating } from '../api/types';
 
 function reorderArray<T>(arr: T[], fromIndex: number, toIndex: number): T[] {
@@ -32,12 +32,11 @@ export default function SkillsAdminPage() {
   const [newSkillCategory, setNewSkillCategory] = useState<number | ''>('');
   const [newSkillDescription, setNewSkillDescription] = useState('');
 
-  const [scaleSkill, setScaleSkill] = useState<number | ''>('');
-  const [scaleLevels, setScaleLevels] = useState('');
-  const [scaleDescriptions, setScaleDescriptions] = useState<Record<string, string>>({});
+  const [levelsInput, setLevelsInput] = useState('');
+  const [savingLevels, setSavingLevels] = useState(false);
 
-  const [editingScaleId, setEditingScaleId] = useState<number | null>(null);
-  const [editingDescriptions, setEditingDescriptions] = useState<Record<string, string>>({});
+  const [editingSkillId, setEditingSkillId] = useState<number | null>(null);
+  const [editingSkillDescriptions, setEditingSkillDescriptions] = useState<Record<string, string>>({});
 
   async function load() {
     setLoading(true);
@@ -52,6 +51,7 @@ export default function SkillsAdminPage() {
       setSkills(skillsRes.results);
       setScales(scalesRes.results);
       setRatings(ratingsRes.results);
+      setLevelsInput(scalesRes.results[0]?.levels.join(', ') ?? '');
     } catch {
       setError('Failed to load the skills taxonomy.');
     } finally {
@@ -63,8 +63,9 @@ export default function SkillsAdminPage() {
     void load();
   }, []);
 
+  const levels = getProficiencyLevels(scales);
+
   function levelCountsForSkill(skillId: number): { level: string; count: number }[] {
-    const levels = getLevelsForSkill(skillId, scales);
     const counts: Record<string, number> = {};
     ratings.filter((r) => r.skill === skillId).forEach((r) => {
       counts[r.proficiency_level] = (counts[r.proficiency_level] ?? 0) + 1;
@@ -135,55 +136,40 @@ export default function SkillsAdminPage() {
     e.preventDefault();
   }
 
-  const parsedNewLevels = scaleLevels
-    .split(',')
-    .map((l) => l.trim())
-    .filter(Boolean);
-
-  function handleScaleLevelsChange(raw: string) {
-    setScaleLevels(raw);
-    const parsed = raw
+  async function saveLevels() {
+    const parsed = levelsInput
       .split(',')
       .map((l) => l.trim())
       .filter(Boolean);
-    // keep whatever the admin already typed for a level that's still present;
-    // drop descriptions for levels that got removed/renamed
-    setScaleDescriptions((prev) => {
-      const next: Record<string, string> = {};
-      parsed.forEach((level) => {
-        next[level] = prev[level] ?? '';
-      });
-      return next;
-    });
+    if (parsed.length === 0) return;
+    setSavingLevels(true);
+    setError(null);
+    try {
+      const existing = scales[0];
+      if (existing) {
+        await proficiencyScalesApi.update(existing.id, { levels: parsed });
+      }
+      await load();
+    } catch {
+      setError('Failed to save proficiency levels.');
+    } finally {
+      setSavingLevels(false);
+    }
   }
 
-  async function addScale() {
-    if (parsedNewLevels.length === 0) return;
+  function startEditingSkill(skill: Skill) {
+    setEditingSkillId(skill.id);
+    setEditingSkillDescriptions({ ...skill.level_descriptions });
+  }
+
+  async function saveSkillDescriptions(skill: Skill) {
     const level_descriptions: Record<string, string> = {};
-    parsedNewLevels.forEach((level) => {
-      const desc = (scaleDescriptions[level] ?? '').trim();
+    levels.forEach((level) => {
+      const desc = (editingSkillDescriptions[level] ?? '').trim();
       if (desc) level_descriptions[level] = desc;
     });
-    await proficiencyScalesApi.create({ skill: scaleSkill || null, levels: parsedNewLevels, level_descriptions });
-    setScaleSkill('');
-    setScaleLevels('');
-    setScaleDescriptions({});
-    await load();
-  }
-
-  function startEditingScale(scale: ProficiencyScale) {
-    setEditingScaleId(scale.id);
-    setEditingDescriptions({ ...scale.level_descriptions });
-  }
-
-  async function saveScaleDescriptions(scale: ProficiencyScale) {
-    const level_descriptions: Record<string, string> = {};
-    scale.levels.forEach((level) => {
-      const desc = (editingDescriptions[level] ?? '').trim();
-      if (desc) level_descriptions[level] = desc;
-    });
-    await proficiencyScalesApi.update(scale.id, { level_descriptions });
-    setEditingScaleId(null);
+    await skillsApi.update(skill.id, { level_descriptions });
+    setEditingSkillId(null);
     await load();
   }
 
@@ -195,10 +181,32 @@ export default function SkillsAdminPage() {
       {error && <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
       <section className="rounded-xl border border-gray-200 bg-white p-4">
+        <h2 className="mb-3 font-medium">Proficiency levels</h2>
+        <p className="mb-3 text-sm text-gray-500">
+          Every skill shares this same set of levels, low to high — what each one actually <em>means</em> is
+          set per skill below.
+        </p>
+        <div className="flex flex-wrap items-end gap-3">
+          <input
+            className="min-w-80 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+            value={levelsInput}
+            onChange={(e) => setLevelsInput(e.target.value)}
+          />
+          <button
+            onClick={() => void saveLevels()}
+            disabled={savingLevels}
+            className="rounded-md bg-orange-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
+          >
+            Save levels
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-gray-200 bg-white p-4">
         <h2 className="mb-3 font-medium">Skills</h2>
         <p className="mb-3 text-sm text-gray-500">
-          Drag <span className="text-gray-400">⠿</span> to reorder skills within a category — this order is
-          what everyone sees.
+          Drag <span className="text-gray-400">⠿</span> to reorder skills within a category. Each level
+          column shows how many people are currently rated at that level.
         </p>
         <div className="mb-3 space-y-4">
           {categories.map((category) => {
@@ -215,34 +223,95 @@ export default function SkillsAdminPage() {
                         <th className="w-6" />
                         <th className="w-40 p-2 font-normal">Name</th>
                         <th className="p-2 font-normal">Description</th>
-                        <th className="p-2 font-normal">Who has it, by level</th>
+                        {levels.map((level) => (
+                          <th key={level} className="p-2 text-center font-normal">
+                            {level}
+                          </th>
+                        ))}
+                        <th className="p-2" />
                       </tr>
                     </thead>
                     <tbody>
                       {categorySkills.map((s) => (
-                        <tr
-                          key={s.id}
-                          className="border-b border-gray-100 last:border-0"
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, 'text/skill-id', s.id)}
-                          onDragOver={allowDrop}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            const draggedId = Number(e.dataTransfer.getData('text/skill-id'));
-                            if (draggedId) void moveSkill(category.id, draggedId, s.id);
-                          }}
-                        >
-                          <td className="p-2">
-                            <DragHandle />
-                          </td>
-                          <td className="p-2 font-medium">{s.name}</td>
-                          <td className="p-2 text-gray-500">{s.description || '—'}</td>
-                          <td className="p-2 text-gray-500">
-                            {levelCountsForSkill(s.id)
-                              .map(({ level, count }) => `${level} ${count}`)
-                              .join(' · ')}
-                          </td>
-                        </tr>
+                        <Fragment key={s.id}>
+                          <tr
+                            className="border-b border-gray-100 last:border-0"
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, 'text/skill-id', s.id)}
+                            onDragOver={allowDrop}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              const draggedId = Number(e.dataTransfer.getData('text/skill-id'));
+                              if (draggedId) void moveSkill(category.id, draggedId, s.id);
+                            }}
+                          >
+                            <td className="p-2">
+                              <DragHandle />
+                            </td>
+                            <td className="p-2 font-medium">{s.name}</td>
+                            <td className="p-2 text-gray-500">{s.description || '—'}</td>
+                            {levelCountsForSkill(s.id).map(({ level, count }) => (
+                              <td
+                                key={level}
+                                className="p-2 text-center text-gray-700"
+                                title={s.level_descriptions[level] || undefined}
+                              >
+                                {count}
+                              </td>
+                            ))}
+                            <td className="p-2 text-right">
+                              <button
+                                onClick={() =>
+                                  editingSkillId === s.id ? setEditingSkillId(null) : startEditingSkill(s)
+                                }
+                                className="text-xs text-orange-700 hover:underline"
+                              >
+                                {editingSkillId === s.id ? 'Close' : 'Define levels'}
+                              </button>
+                            </td>
+                          </tr>
+                          {editingSkillId === s.id && (
+                            <tr className="border-b border-gray-100 bg-gray-50 last:border-0">
+                              <td />
+                              <td colSpan={2 + levels.length + 1} className="p-3">
+                                <p className="mb-2 text-xs text-gray-500">
+                                  What does each level mean for <span className="font-medium">{s.name}</span>?
+                                </p>
+                                <div className="space-y-2">
+                                  {levels.map((level) => (
+                                    <div key={level} className="flex items-center gap-2">
+                                      <span className="w-28 shrink-0 text-sm font-medium text-gray-600">{level}</span>
+                                      <input
+                                        className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
+                                        value={editingSkillDescriptions[level] ?? ''}
+                                        onChange={(e) =>
+                                          setEditingSkillDescriptions((prev) => ({
+                                            ...prev,
+                                            [level]: e.target.value,
+                                          }))
+                                        }
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="mt-2 flex gap-3 text-sm">
+                                  <button
+                                    onClick={() => void saveSkillDescriptions(s)}
+                                    className="text-orange-700 hover:underline"
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingSkillId(null)}
+                                    className="text-gray-500 hover:underline"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
                       ))}
                     </tbody>
                   </table>
@@ -324,100 +393,6 @@ export default function SkillsAdminPage() {
             Add category
           </button>
         </div>
-      </section>
-
-      <section className="rounded-xl border border-gray-200 bg-white p-4">
-        <h2 className="mb-3 font-medium">Proficiency scales</h2>
-        <p className="mb-3 text-sm text-gray-500">
-          Each level can have a description explaining what it actually means — this shows up wherever
-          someone picks a level (self-assessments, position requirements, capability search).
-        </p>
-
-        <ul className="mb-4 space-y-3">
-          {scales.map((s) => (
-            <li key={s.id} className="rounded-lg border border-gray-100 p-3">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-medium">
-                  {s.skill ? (skills.find((sk) => sk.id === s.skill)?.name ?? 'Unknown skill') : 'Global default'}
-                </span>
-                {editingScaleId === s.id ? (
-                  <div className="flex gap-3 text-sm">
-                    <button onClick={() => void saveScaleDescriptions(s)} className="text-orange-700 hover:underline">
-                      Save
-                    </button>
-                    <button onClick={() => setEditingScaleId(null)} className="text-gray-500 hover:underline">
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button onClick={() => startEditingScale(s)} className="text-sm text-orange-700 hover:underline">
-                    Edit descriptions
-                  </button>
-                )}
-              </div>
-              <ul className="space-y-1 text-sm">
-                {s.levels.map((level) => (
-                  <li key={level} className="flex items-baseline gap-2">
-                    <span className="w-28 shrink-0 font-medium text-gray-600">{level}</span>
-                    {editingScaleId === s.id ? (
-                      <input
-                        className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm"
-                        placeholder="What does this level mean?"
-                        value={editingDescriptions[level] ?? ''}
-                        onChange={(e) => setEditingDescriptions((prev) => ({ ...prev, [level]: e.target.value }))}
-                      />
-                    ) : (
-                      <span className="text-gray-500">{s.level_descriptions[level] || '—'}</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-        </ul>
-
-        <div className="flex flex-wrap items-end gap-3">
-          <select
-            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm"
-            value={scaleSkill}
-            onChange={(e) => setScaleSkill(e.target.value ? Number(e.target.value) : '')}
-          >
-            <option value="">Global default scale</option>
-            {skills.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-          <input
-            className="min-w-64 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
-            placeholder="Levels, comma separated (low to high)"
-            value={scaleLevels}
-            onChange={(e) => handleScaleLevelsChange(e.target.value)}
-          />
-          <button
-            onClick={() => void addScale()}
-            disabled={parsedNewLevels.length === 0}
-            className="rounded-md bg-orange-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
-          >
-            Add scale
-          </button>
-        </div>
-        {parsedNewLevels.length > 0 && (
-          <div className="mt-3 space-y-2">
-            <p className="text-sm text-gray-500">Optionally describe what each level means:</p>
-            {parsedNewLevels.map((level) => (
-              <div key={level} className="flex items-center gap-2">
-                <span className="w-28 shrink-0 text-sm font-medium text-gray-600">{level}</span>
-                <input
-                  className="flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
-                  value={scaleDescriptions[level] ?? ''}
-                  onChange={(e) => setScaleDescriptions((prev) => ({ ...prev, [level]: e.target.value }))}
-                />
-              </div>
-            ))}
-          </div>
-        )}
       </section>
     </div>
   );

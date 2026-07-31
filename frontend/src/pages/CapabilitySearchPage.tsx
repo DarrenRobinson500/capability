@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import Badge from '../components/Badge';
 import { capabilitySearchApi, proficiencyScalesApi, skillsApi } from '../api/client';
-import { getLevelDescription, getLevelsForSkill } from '../lib/proficiency';
+import { getLevelDescription, getProficiencyLevels } from '../lib/proficiency';
 import type { CapabilitySearchResult, ProficiencyScale, Skill } from '../api/types';
 
 export default function CapabilitySearchPage() {
@@ -21,8 +21,8 @@ export default function CapabilitySearchPage() {
     });
   }, []);
 
-  const availableLevels = selectedSkill ? getLevelsForSkill(selectedSkill, scales) : [];
-  const minLevelDescription = selectedSkill && minLevel ? getLevelDescription(selectedSkill, minLevel, scales) : undefined;
+  const availableLevels = getProficiencyLevels(scales);
+  const minLevelDescription = selectedSkill && minLevel ? getLevelDescription(selectedSkill, minLevel, skills) : undefined;
 
   async function runSearch(e: FormEvent) {
     e.preventDefault();
@@ -111,7 +111,7 @@ export default function CapabilitySearchPage() {
                 {results.map((r) => (
                   <tr key={r.employee_id} className="border-b border-gray-100 last:border-0">
                     <td className="p-3 font-medium">{r.employee_name}</td>
-                    <td className="p-3" title={selectedSkill ? getLevelDescription(selectedSkill, r.proficiency_level, scales) : undefined}>
+                    <td className="p-3" title={selectedSkill ? getLevelDescription(selectedSkill, r.proficiency_level, skills) : undefined}>
                       {r.proficiency_level}
                     </td>
                     <td className="p-3">

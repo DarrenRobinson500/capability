@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.test import Client, TestCase
 
 from orgstructure.models import Position, Role
@@ -26,7 +27,7 @@ class ManagerSubtreePermissionBoundaryTests(TestCase):
     def setUp(self):
         role = Role.objects.create(title='Engineer', level=1)
         self.skill = Skill.objects.create(name='Python', category=SkillCategory.objects.create(name='Tech'))
-        ProficiencyScale.objects.create(skill=None, levels=['Novice', 'Practitioner', 'Advanced', 'Expert'])
+        ProficiencyScale.objects.create(levels=['Novice', 'Practitioner', 'Advanced', 'Expert'])
 
         self.team_a_manager_position = Position.objects.create(role=role, department='Eng')
         self.manager_a, _ = make_manager('manager_a', self.team_a_manager_position)
@@ -85,7 +86,7 @@ class GapAnalysisCalculationTests(TestCase):
         category = SkillCategory.objects.create(name='Tech')
         self.python = Skill.objects.create(name='Python', category=category)
         self.git = Skill.objects.create(name='Git', category=category)
-        ProficiencyScale.objects.create(skill=None, levels=['Novice', 'Practitioner', 'Advanced', 'Expert'])
+        ProficiencyScale.objects.create(levels=['Novice', 'Practitioner', 'Advanced', 'Expert'])
 
         self.manager_position = Position.objects.create(role=role, department='Eng')
         self.manager, _ = make_manager('gap_manager', self.manager_position)
@@ -252,3 +253,30 @@ class ReorderTests(TestCase):
             content_type='application/json',
         )
         self.assertEqual(response.status_code, 400)
+
+
+class SharedProficiencyScaleTests(TestCase):
+    """Every skill shares the same level names (an executive call so the
+    Skills page can show one column per level) — only the per-level
+    *description* varies, and that lives on Skill, not on a per-skill scale.
+    """
+
+    def setUp(self):
+        self.category = SkillCategory.objects.create(name='Tech')
+        self.python = Skill.objects.create(name='Python', category=self.category)
+        ProficiencyScale.objects.create(levels=['Novice', 'Practitioner', 'Advanced', 'Expert'])
+
+    def test_only_one_scale_can_exist(self):
+        with self.assertRaises(ValidationError):
+            ProficiencyScale.objects.create(levels=['Bad', 'Duplicate'])
+
+    def test_skill_level_description_rejects_unknown_level(self):
+        self.python.level_descriptions = {'Godlike': 'not a real level'}
+        with self.assertRaises(ValidationError):
+            self.python.save()
+
+    def test_skill_level_description_accepts_known_level(self):
+        self.python.level_descriptions = {'Advanced': 'Handles complex Python problems.'}
+        self.python.save()
+        self.python.refresh_from_db()
+        self.assertEqual(self.python.level_descriptions['Advanced'], 'Handles complex Python problems.')

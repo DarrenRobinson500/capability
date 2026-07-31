@@ -28,37 +28,21 @@ class Skill(models.Model):
     taxonomy_version = models.IntegerField(default=1)
     # HR-controlled display order within its category — see SkillViewSet.reorder().
     order = models.IntegerField(default=0)
+    # {level_name: what this level actually means for THIS skill} — every
+    # skill shares the same level *names* (ProficiencyScale.levels below),
+    # but what each one means varies per skill. Optional per level.
+    level_descriptions = models.JSONField(default=dict, blank=True)
 
     class Meta:
         unique_together = ('name', 'category')
         ordering = ['category__order', 'order']
 
-    def __str__(self):
-        return self.name
-
-
-class ProficiencyScale(models.Model):
-    """An ordered list of proficiency level names. skill=None applies as the
-    global default scale for any skill without its own scale.
-    """
-
-    skill = models.ForeignKey(
-        Skill, null=True, blank=True, on_delete=models.CASCADE, related_name='proficiency_scales'
-    )
-    levels = models.JSONField(default=list)
-    # {level_name: what this level actually means for this scale} — optional
-    # per level, so a scale can be created before every level is written up.
-    level_descriptions = models.JSONField(default=dict, blank=True)
-
-    class Meta:
-        ordering = ['id']
-
     def clean(self):
         super().clean()
-        unknown = set(self.level_descriptions) - set(self.levels)
+        unknown = set(self.level_descriptions) - set(get_proficiency_levels())
         if unknown:
             raise ValidationError(
-                {'level_descriptions': f'Unknown level(s) not in levels: {sorted(unknown)}'}
+                {'level_descriptions': f'Unknown level(s) not in the shared proficiency scale: {sorted(unknown)}'}
             )
 
     def save(self, *args, **kwargs):
@@ -66,15 +50,35 @@ class ProficiencyScale(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f'Scale for {self.skill}' if self.skill else 'Default scale'
+        return self.name
 
 
-def get_scale_for_skill(skill):
-    """The skill's own scale if it has one, else the global default scale."""
-    scale = ProficiencyScale.objects.filter(skill=skill).first()
-    if scale is None:
-        scale = ProficiencyScale.objects.filter(skill__isnull=True).first()
-    return scale
+class ProficiencyScale(models.Model):
+    """The single shared, ordered list of proficiency level names used by
+    every skill (e.g. Novice < Practitioner < Advanced < Expert) — HR-
+    editable, but there is only ever one row. What each level actually means
+    varies per skill instead — see Skill.level_descriptions.
+    """
+
+    levels = models.JSONField(default=list)
+
+    def clean(self):
+        super().clean()
+        if self.pk is None and ProficiencyScale.objects.exists():
+            raise ValidationError('Only one proficiency scale can exist — edit the existing one instead.')
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return 'Proficiency scale'
+
+
+def get_proficiency_levels():
+    """The single shared ordered list of level names, or [] if not yet configured."""
+    scale = ProficiencyScale.objects.first()
+    return scale.levels if scale else []
 
 
 class SkillRating(models.Model):
@@ -96,11 +100,9 @@ class SkillRating(models.Model):
 
     def clean(self):
         super().clean()
-        scale = get_scale_for_skill(self.skill)
-        if scale is not None and self.proficiency_level not in scale.levels:
-            raise ValidationError(
-                {'proficiency_level': f'Must be one of {scale.levels} for this skill.'}
-            )
+        levels = get_proficiency_levels()
+        if levels and self.proficiency_level not in levels:
+            raise ValidationError({'proficiency_level': f'Must be one of {levels}.'})
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -125,11 +127,9 @@ class PositionRequirement(models.Model):
 
     def clean(self):
         super().clean()
-        scale = get_scale_for_skill(self.skill)
-        if scale is not None and self.min_proficiency not in scale.levels:
-            raise ValidationError(
-                {'min_proficiency': f'Must be one of {scale.levels} for this skill.'}
-            )
+        levels = get_proficiency_levels()
+        if levels and self.min_proficiency not in levels:
+            raise ValidationError({'min_proficiency': f'Must be one of {levels}.'})
 
     def save(self, *args, **kwargs):
         self.clean()
