@@ -337,7 +337,7 @@ export default function SkillsAdminPage() {
                                         <div className="font-medium text-gray-700">{level}</div>
                                         {description && <p className="text-gray-500">{description}</p>}
                                         {names.length > 0 ? (
-                                          <p className="font-bold text-blue-600">{names.join(', ')}</p>
+                                          <p className="text-blue-600">{names.join(', ')}</p>
                                         ) : (
                                           <p className="text-gray-500">No one rated at this level yet.</p>
                                         )}
