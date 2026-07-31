@@ -26,9 +26,7 @@ function OrgNode({
         }`}
       >
         <div className="font-medium">{node.role_title}</div>
-        <div className="text-sm text-gray-500">
-          {node.is_vacant ? 'Vacant' : node.employee_name} · {node.department}
-        </div>
+        <div className="text-sm text-gray-500">{node.is_vacant ? 'Vacant' : node.employee_name}</div>
       </button>
       {node.direct_reports.length > 0 && (
         <ul>
