@@ -73,6 +73,19 @@ export default function SkillsAdminPage() {
     return levels.map((level) => ({ level, count: counts[level] ?? 0 }));
   }
 
+  function namesAtLevel(skillId: number, level: string): string[] {
+    return ratings.filter((r) => r.skill === skillId && r.proficiency_level === level).map((r) => r.employee_name);
+  }
+
+  function countCellTooltip(skill: Skill, level: string): string | undefined {
+    const names = namesAtLevel(skill.id, level);
+    const description = skill.level_descriptions[level];
+    const parts: string[] = [];
+    if (description) parts.push(description);
+    if (names.length > 0) parts.push(`${level}: ${names.join(', ')}`);
+    return parts.length > 0 ? parts.join('\n\n') : undefined;
+  }
+
   async function addCategory() {
     if (!newCategoryName.trim()) return;
     await skillCategoriesApi.create({ name: newCategoryName.trim() });
@@ -232,7 +245,7 @@ export default function SkillsAdminPage() {
                               <td
                                 key={level}
                                 className="p-2 text-center text-gray-700"
-                                title={s.level_descriptions[level] || undefined}
+                                title={countCellTooltip(s, level)}
                               >
                                 {count}
                               </td>
