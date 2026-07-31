@@ -17,7 +17,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   { to: '/profile', label: 'My Skills Profile', show: (_role, hasEmployee) => hasEmployee },
   { to: '/team', label: 'Team Skills Matrix', show: (role) => role === 'MANAGER' },
-  { to: '/admin/org-structure', label: 'Org Structure Builder', show: (role) => role === 'HR_ADMIN' },
+  { to: '/admin/org-structure', label: 'Org Chart Builder', show: (role) => role === 'HR_ADMIN' },
   {
     to: '/reports/gaps',
     label: 'Gap Analysis',
