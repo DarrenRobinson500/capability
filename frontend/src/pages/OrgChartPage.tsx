@@ -84,11 +84,7 @@ export default function OrgChartPage() {
               <p className="text-sm text-gray-500">Select a position to see its required skills.</p>
             ) : (
               <>
-                <div className="mb-1 font-medium">{selected.role_title}</div>
-                <div className="mb-3 text-sm text-gray-500">
-                  {selected.is_vacant ? 'Vacant · ' : ''}
-                  {selected.department}
-                </div>
+                <div className="mb-3 font-medium">{selected.role_title}</div>
                 {loadingRequirements ? (
                   <p className="text-sm text-gray-500">Loading…</p>
                 ) : requirements.length === 0 ? (
@@ -97,7 +93,7 @@ export default function OrgChartPage() {
                   <ul className="space-y-1.5 text-sm">
                     {requirements.map((r) => (
                       <li key={r.id} className="flex items-center justify-between gap-2">
-                        <span className="font-medium">{r.skill_name}</span>
+                        <span>{r.skill_name}</span>
                         <span className="text-gray-500">
                           {r.min_proficiency}
                           {!r.required && <span className="ml-1 text-gray-400">(nice-to-have)</span>}
