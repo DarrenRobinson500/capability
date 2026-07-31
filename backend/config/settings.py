@@ -169,6 +169,13 @@ REST_FRAMEWORK = {
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
 if RAILWAY_PUBLIC_DOMAIN:
     CSRF_TRUSTED_ORIGINS.append(f'https://{RAILWAY_PUBLIC_DOMAIN}')
+if DEBUG:
+    # The Vite dev server (a different origin/port than Django) proxies
+    # /api/* through to here. Real browsers send an Origin header on every
+    # unsafe request, which Django's CSRF check rejects unless it's listed
+    # here — without this, every authenticated POST/PATCH/DELETE from the
+    # actual frontend fails even though the CSRF token itself is correct.
+    CSRF_TRUSTED_ORIGINS += ['http://localhost:5173', 'http://127.0.0.1:5173']
 
 # Railway terminates TLS at the edge and proxies plain HTTP to the container.
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
