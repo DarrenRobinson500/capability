@@ -79,11 +79,7 @@ export default function SkillsAdminPage() {
 
   function countCellTooltip(skill: Skill, level: string): string | undefined {
     const names = namesAtLevel(skill.id, level);
-    const description = skill.level_descriptions[level];
-    const parts: string[] = [];
-    if (description) parts.push(description);
-    if (names.length > 0) parts.push(`${level}: ${names.join(', ')}`);
-    return parts.length > 0 ? parts.join('\n\n') : undefined;
+    return names.length > 0 ? `${level}: ${names.join(', ')}` : undefined;
   }
 
   async function addCategory() {
