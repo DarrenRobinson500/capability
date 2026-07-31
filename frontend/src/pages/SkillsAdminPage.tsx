@@ -339,7 +339,7 @@ export default function SkillsAdminPage() {
                                         {names.length > 0 ? (
                                           <p className="text-blue-600">{names.join(', ')}</p>
                                         ) : (
-                                          <p className="text-gray-500">No one rated at this level yet.</p>
+                                          <p className="text-blue-600">No one rated at this level yet.</p>
                                         )}
                                       </div>
                                     );
