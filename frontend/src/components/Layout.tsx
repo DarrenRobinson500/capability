@@ -8,6 +8,8 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  { to: '/org-chart', label: 'Org Chart', show: () => true },
+  { to: '/admin/skills', label: 'Skills', show: (role) => role === 'HR_ADMIN' },
   { to: '/profile', label: 'My Skills Profile', show: (_role, hasEmployee) => hasEmployee },
   { to: '/team', label: 'Team Skills Matrix', show: (role) => role === 'MANAGER' },
   {
@@ -16,14 +18,12 @@ const NAV_ITEMS: NavItem[] = [
     show: (role) => role === 'MANAGER' || role === 'HR_ADMIN',
   },
   { to: '/admin/org-structure', label: 'Org Structure Builder', show: (role) => role === 'HR_ADMIN' },
-  { to: '/org-chart', label: 'Org Chart', show: () => true },
   {
     to: '/reports/gaps',
     label: 'Gap Analysis',
     show: (role) => role === 'MANAGER' || role === 'HR_ADMIN' || role === 'EXECUTIVE',
   },
   { to: '/search', label: 'Capability Search', show: (role) => role === 'MANAGER' || role === 'HR_ADMIN' },
-  { to: '/admin/skills', label: 'Skills Taxonomy Admin', show: (role) => role === 'HR_ADMIN' },
   { to: '/certifications', label: 'Certifications', show: () => true },
   {
     to: '/dashboard',
