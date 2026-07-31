@@ -1,23 +1,32 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { orgChartApi, positionRequirementsApi } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import type { OrgChartNode, PositionRequirement } from '../api/types';
 
 function OrgNode({
   node,
   selectedId,
   onSelect,
+  canEdit,
 }: {
   node: OrgChartNode;
   selectedId: number | null;
   onSelect: (node: OrgChartNode) => void;
+  canEdit: boolean;
 }) {
+  const navigate = useNavigate();
   const isSelected = node.id === selectedId;
   return (
     <li className="ml-4 border-l border-gray-200 pl-4">
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => onSelect(node)}
-        className={`mb-2 block w-full rounded-lg border p-3 text-left ${
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') onSelect(node);
+        }}
+        className={`mb-2 flex w-full items-start justify-between gap-2 rounded-lg border p-3 text-left ${
           isSelected
             ? 'border-orange-400 bg-orange-50'
             : node.is_vacant
@@ -25,13 +34,27 @@ function OrgNode({
               : 'border-gray-200 bg-white hover:bg-gray-50'
         }`}
       >
-        <div className="font-medium">{node.role_title}</div>
-        <div className="text-sm text-gray-500">{node.is_vacant ? 'Vacant' : node.employee_name}</div>
-      </button>
+        <div>
+          <div className="font-medium">{node.role_title}</div>
+          <div className="text-sm text-gray-500">{node.is_vacant ? 'Vacant' : node.employee_name}</div>
+        </div>
+        {canEdit && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/requirements?position=${node.id}`);
+            }}
+            className="shrink-0 text-xs text-orange-700 hover:underline"
+          >
+            Edit
+          </button>
+        )}
+      </div>
       {node.direct_reports.length > 0 && (
         <ul>
           {node.direct_reports.map((child) => (
-            <OrgNode key={child.id} node={child} selectedId={selectedId} onSelect={onSelect} />
+            <OrgNode key={child.id} node={child} selectedId={selectedId} onSelect={onSelect} canEdit={canEdit} />
           ))}
         </ul>
       )}
@@ -40,6 +63,8 @@ function OrgNode({
 }
 
 export default function OrgChartPage() {
+  const { user } = useAuth();
+  const canEdit = user?.role === 'MANAGER' || user?.role === 'HR_ADMIN';
   const [tree, setTree] = useState<OrgChartNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<OrgChartNode | null>(null);
@@ -74,7 +99,7 @@ export default function OrgChartPage() {
         <div className="flex-1">
           <ul>
             {tree.map((root) => (
-              <OrgNode key={root.id} node={root} selectedId={selected?.id ?? null} onSelect={setSelected} />
+              <OrgNode key={root.id} node={root} selectedId={selected?.id ?? null} onSelect={setSelected} canEdit={canEdit} />
             ))}
           </ul>
         </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { positionRequirementsApi, positionsApi, proficiencyScalesApi, skillsApi } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { getSubtreePositionIds } from '../lib/orgTree';
@@ -7,10 +8,14 @@ import type { Position, PositionRequirement, ProficiencyScale, Skill } from '../
 
 export default function PositionRequirementsPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [positions, setPositions] = useState<Position[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [scales, setScales] = useState<ProficiencyScale[]>([]);
-  const [selectedPosition, setSelectedPosition] = useState<number | ''>('');
+  const [selectedPosition, setSelectedPosition] = useState<number | ''>(() => {
+    const fromUrl = searchParams.get('position');
+    return fromUrl ? Number(fromUrl) : '';
+  });
   const [requirements, setRequirements] = useState<PositionRequirement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
